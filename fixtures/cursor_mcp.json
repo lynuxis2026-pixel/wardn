@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "scraper": {
+      "command": "npx",
+      "args": ["-y", "cool-scraper-mcp"]
+    },
+    "weird": {
+      "command": "/usr/local/bin/custom-mcp",
+      "args": []
+    },
+    "remote-notion": {
+      "url": "https://mcp.example.com/sse"
+    }
+  }
+}
