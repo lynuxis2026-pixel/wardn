@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 240" role="img" aria-labelledby="how-title how-desc">
+  <title id="how-title">how wardn works in four steps</title>
+  <desc id="how-desc">Four-step flow: scan discovers and scores every MCP server; sandbox locks down the dangerous ones; gateway routes every tool-call through wardn with live logging; the dashboard visualises the whole thing.</desc>
+
+  <defs>
+    <radialGradient id="howbg" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#4db4dc" stop-opacity="0.08"/>
+      <stop offset="60%" stop-color="#4db4dc" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="880" height="240" fill="#000510"/>
+  <rect width="880" height="240" fill="url(#howbg)"/>
+
+  <g font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace">
+
+    <!-- Step 1 -->
+    <g transform="translate(40, 56)">
+      <rect width="180" height="128" rx="10" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+      <text x="20" y="30" font-size="11" fill="#4db4dc" letter-spacing="2">01</text>
+      <text x="20" y="58" font-size="15" font-weight="600" fill="#d6ecf6">scan</text>
+      <text x="20" y="82" font-size="11" fill="#6f93a8">discover every MCP server</text>
+      <text x="20" y="98" font-size="11" fill="#6f93a8">from your clients;</text>
+      <text x="20" y="114" font-size="11" fill="#6f93a8">score each one.</text>
+    </g>
+
+    <!-- arrow 1->2 -->
+    <line x1="220" y1="120" x2="244" y2="120" stroke="#4db4dc" stroke-width="1.4"/>
+    <polygon points="244,116 252,120 244,124" fill="#4db4dc"/>
+
+    <!-- Step 2 -->
+    <g transform="translate(258, 56)">
+      <rect width="180" height="128" rx="10" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+      <text x="20" y="30" font-size="11" fill="#4db4dc" letter-spacing="2">02</text>
+      <text x="20" y="58" font-size="15" font-weight="600" fill="#d6ecf6">sandbox</text>
+      <text x="20" y="82" font-size="11" fill="#6f93a8">lock the risky ones down</text>
+      <text x="20" y="98" font-size="11" fill="#6f93a8">to a path, with no</text>
+      <text x="20" y="114" font-size="11" fill="#6f93a8">network and no env leak.</text>
+    </g>
+
+    <line x1="438" y1="120" x2="462" y2="120" stroke="#4db4dc" stroke-width="1.4"/>
+    <polygon points="462,116 470,120 462,124" fill="#4db4dc"/>
+
+    <!-- Step 3 -->
+    <g transform="translate(476, 56)">
+      <rect width="180" height="128" rx="10" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+      <text x="20" y="30" font-size="11" fill="#4db4dc" letter-spacing="2">03</text>
+      <text x="20" y="58" font-size="15" font-weight="600" fill="#d6ecf6">gateway</text>
+      <text x="20" y="82" font-size="11" fill="#6f93a8">every tool-call routes</text>
+      <text x="20" y="98" font-size="11" fill="#6f93a8">through wardn — blocked</text>
+      <text x="20" y="114" font-size="11" fill="#6f93a8">if it leaves the policy.</text>
+    </g>
+
+    <line x1="656" y1="120" x2="680" y2="120" stroke="#4db4dc" stroke-width="1.4"/>
+    <polygon points="680,116 688,120 680,124" fill="#4db4dc"/>
+
+    <!-- Step 4 -->
+    <g transform="translate(694, 56)">
+      <rect width="146" height="128" rx="10" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+      <text x="20" y="30" font-size="11" fill="#4db4dc" letter-spacing="2">04</text>
+      <text x="20" y="58" font-size="15" font-weight="600" fill="#d6ecf6">watch</text>
+      <text x="20" y="82" font-size="11" fill="#6f93a8">dashboard + live</text>
+      <text x="20" y="98" font-size="11" fill="#6f93a8">SSE event stream.</text>
+      <text x="20" y="114" font-size="11" fill="#6f93a8">All local.</text>
+    </g>
+
+    <text x="440" y="220" text-anchor="middle" font-size="11" fill="#6f93a8" letter-spacing="2">npx wardn scan  →  wardn sandbox  →  wardn gateway start  →  http://127.0.0.1:7331</text>
+  </g>
+</svg>

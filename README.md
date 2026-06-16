@@ -1,43 +1,50 @@
-# wardn
+<div align="center">
+
+# ⛨ wardn
 
 **See and stop the risky code your AI agents run.**
 
+A local-first MCP control plane for developers using Claude Desktop, Cursor, VS Code, Codex, or
+custom agents. One command discovers every MCP server you have, scores it for risk, routes every
+tool-call through a local gateway, and lets you sandbox the dangerous ones.
+
 [![npm version](https://img.shields.io/npm/v/wardn.svg?color=4db4dc&labelColor=000510)](https://www.npmjs.com/package/wardn)
 [![CI](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml/badge.svg)](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml)
+[![coverage](https://img.shields.io/badge/coverage-83%25-7be0a4.svg?labelColor=000510)](#tested)
 [![license](https://img.shields.io/badge/license-MIT-4db4dc.svg?labelColor=000510)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A518-4db4dc.svg?labelColor=000510)](package.json)
 
-`wardn` is a local-first MCP control plane for developers using Claude Desktop, Cursor, VS Code,
-Codex, or custom agents. One command discovers your MCP servers, explains their risk, routes calls
-through a local gateway, and lets you sandbox the dangerous ones.
+[Quickstart](#quickstart) · [How it works](#how-it-works) · [Trust signals](#trust-signals) · [Commands](#commands) · [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md)
 
-> A [Lynuxis](https://lynuxis.nl) project.
+</div>
+
+---
 
 ![wardn demo — evil-mcp blocked four times](assets/wardn-attack-demo.svg)
 
-## Why wardn exists
+> _`npx wardn demo` runs a bundled malicious MCP server through the gateway and blocks every attack before the server sees the call. The demo is reproducible — see [examples/evil-mcp](examples/evil-mcp/)._
 
-MCP servers are useful, but each one is code running with real permissions: filesystem access,
-network access, shell access, and sometimes your API tokens. Most developers have no quick way to
-see what is running, what it can touch, or which servers deserve trust.
+---
 
-`wardn` gives that visibility locally. No cloud account. No telemetry. No enterprise console. Just:
+## Why wardn
+
+You're running MCP servers in Claude Desktop, Cursor, or your own agent. Each one is **code with real
+permissions**: filesystem access, network, shell, your API tokens. There are thousands of MCP servers
+in the wild and no easy way to see what's actually running, what it can touch, or whether to trust it.
+
+`wardn` is the local, developer-first answer. No cloud account. No telemetry. No enterprise console.
 
 ```bash
 npx wardn scan
 ```
 
-## The moment
-
 ```text
-wardn scan
-
 Found 5 MCP servers across 2 clients
 
   ● RISKY    filesystem           (claude_desktop)
              ↳ Broad filesystem access granted: "/"
   ○ REVIEW   remote-notion        (cursor)
-             ↳ Remote server — data leaves your machine (mcp.example.com)
+             ↳ Remote server — data leaves your machine
   ○ REVIEW   scraper              (cursor)
              ↳ Unpinned package version (cool-scraper-mcp) — supply-chain risk
   ○ REVIEW   weird                (cursor)
@@ -47,164 +54,268 @@ Found 5 MCP servers across 2 clients
   5 servers · 1 risky · 3 review · 1 trusted
 ```
 
-Then lock the risky server down:
+Exits non-zero if anything risky is found — drop it into CI and you have a regression test for
+"what's installed on my dev machine."
+
+---
+
+## How it works
+
+![four steps: scan → sandbox → gateway → watch](assets/wardn-how.svg)
+
+Four small commands and the work is done.
+
+| | Command | What happens |
+|---|---|---|
+| **01** | `npx wardn scan` | Reads Claude Desktop / Cursor / VS Code MCP configs and scores every server with explainable signals. |
+| **02** | `npx wardn sandbox enable <name>` | Writes a per-server policy: filesystem whitelist, network on/off, env-whitelist. Stored at `~/.wardn/policy.json`. |
+| **03** | `npx wardn gateway start` | Local Fastify daemon + stdio proxy. Every `tools/call` is vetted before the MCP server sees it. |
+| **04** | open the dashboard | Lynuxis-styled console at `http://127.0.0.1:7331`, with live tool-call log over SSE. |
+
+Optional fifth step: `npx wardn rewrite apply` rewrites your client configs so every server you've
+ever installed routes through the gateway from now on. Backed up byte-for-byte; one command undoes it.
+
+---
+
+## The picture
+
+![architecture: AI client → wardn gateway → MCP server, with sandbox + scanner + log in the middle](assets/wardn-flow.svg)
+
+The gateway sits between the client and the server. Bytes are forwarded **verbatim** — the wire
+format stays identical. Every JSON-RPC message is parsed alongside the wire to drive the log and the
+sandbox enforcer. A blocked `tools/call` is returned to the client as a synthetic JSON-RPC `result`
+with `isError: true` — no server contact, no surprise side effect.
+
+For a deeper walkthrough see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+---
+
+## Trust signals
+
+![signal catalog: risky / review / info badges with examples](assets/wardn-signals.svg)
+
+Every flag has a one-line `reason`. No black box.
+
+| Signal | Severity | Triggered when |
+|---|---|---|
+| `broad-fs` | risky | A server arg is `/`, `~`, or a top-level system directory |
+| `shell-exec` | risky | The launcher is `bash`, `cmd`, `sh`, or another raw shell |
+| `known-bad` | risky | The package is flagged in [`data/trust.json`](data/trust.json) |
+| `arbitrary-binary` | review | The launcher is an unrecognized executable |
+| `floating-version` | review | A community package is run unpinned (supply-chain risk) |
+| `unofficial-source` | review | The package is not from a verified publisher |
+| `remote-transport` | review | The server is `url:` based — data leaves your machine |
+| `verified` | info | The package matches a verified publisher in the trust registry |
+| `official` | info | The package is `@modelcontextprotocol/*` |
+| `holds-secrets` | info | Env keys look like API/TOKEN/KEY/PASSWORD |
+| `sandboxed` | info | A wardn policy is active for this server |
+
+> ⛨ Sandboxing a server **removes** the signals the policy neutralizes — a `broad-fs` server pinned to
+> `~/safe-workspace` drops out of `RISKY` because that broad access can no longer happen at runtime.
+
+---
+
+## Quickstart
+
+### 1. Scan
+
+```bash
+npx wardn scan
+```
+
+Reads the config of every MCP-capable client installed locally; scores each server.
+
+### 2. Sandbox the risky one
 
 ```bash
 npx wardn sandbox enable filesystem --path ~/safe-workspace
 ```
 
-Start the local gateway and dashboard:
+```text
+✓ Sandbox enabled for filesystem
+
+  filesystem  /Users/you/safe-workspace
+  network     off
+  env         (baseline only)
+  isolation   policy-only (Docker not detected)
+
+  Run wardn gateway run filesystem to spawn the server inside the sandbox.
+```
+
+Re-scan:
+
+```text
+✓ TRUSTED  filesystem           (claude_desktop)  ⛨ sandboxed
+           ⛨ fs=[/Users/you/safe-workspace], network=off, env-whitelist=0
+```
+
+### 3. Start the gateway + dashboard
 
 ```bash
 npx wardn gateway start
 ```
 
-Open:
-
 ```text
-http://127.0.0.1:7331/
+wardn gateway — daemon up
+
+  dashboard  http://127.0.0.1:7331/
+  status     http://127.0.0.1:7331/api/status
+  events     http://127.0.0.1:7331/api/events  (SSE)
+  log        ~/.wardn/gateway.log
 ```
 
-Want a proof? `wardn demo` spawns a deliberately malicious MCP server (in `examples/evil-mcp/`)
-behind the gateway under a tight sandbox, fires four real-world attack vectors, and shows you
-every one of them blocked before the server ever sees the call:
+The dashboard shows every server, its trust level, the policy in effect, and a live stream of
+JSON-RPC tool-calls. One click sandboxes a server.
+
+![dashboard preview](assets/wardn-dashboard.svg)
+
+### 4. Route existing clients through wardn
+
+```bash
+npx wardn rewrite apply       # rewrites Claude Desktop / Cursor / VS Code configs (with backup)
+npx wardn rewrite restore     # undo, byte-for-byte
+npx wardn rewrite status      # see what's active
+```
+
+Restart your client; every MCP tool-call now flows through the local gateway.
+
+### 5. Prove it works
 
 ```bash
 npx wardn demo
 ```
 
+Spawns the bundled [evil-mcp](examples/evil-mcp/) through the gateway under a tight sandbox, fires
+four attack vectors (path traversal, exfiltration, destructive command, shell injection), and shows
+each one rejected before the server is reached.
+
+---
+
+## Trust registry — the community layer
+
+wardn ships a curated [`data/trust.json`](data/trust.json) mapping known MCP packages to a verified
+publisher (Anthropic, Microsoft Playwright, Notion, Upstash, Cloudflare, …). The scanner uses it on
+top of the heuristics — an official server shows `Verified publisher: Anthropic`, a `knownBad: true`
+entry is treated as `RISKY` regardless of how innocent the config looks.
+
+**Spot a server we should add — or one we should flag?** Open a
+[Trust registry entry](https://github.com/lynuxis2026-pixel/wardn/issues/new?template=trust-registry.yml).
+Every entry is a one-screen YAML form, and good ones land within a release.
+
+---
+
+## How sandboxing actually works
+
+When a policy is enabled, wardn enforces it in **two layers**:
+
+1. **Spawn-time policy.** Known servers like `@modelcontextprotocol/server-filesystem` are spawned with
+   restricted positional path arguments. Env vars are filtered down to a baseline set plus your
+   explicit `envWhitelist`. When Docker is available the process additionally runs in a container
+   with `--network none` and read-only mounts.
+2. **Runtime tool-call policy.** Outgoing `tools/call` JSON-RPC messages are inspected. wardn
+   rejects:
+   - any path argument that falls outside `policy.filesystem.paths`
+   - any URL anywhere in the arguments while `policy.network: false`
+   - any tool whose name tokenizes to a dangerous keyword (`shell`, `exec`, `run`, `spawn`, `eval`,
+     `command`, `cmd`, `process`, `system`) — `runQuery`, `shellExec`, `shell_exec` all match.
+     Opt back in for specific tools via `policy.allowedTools`.
+
+All policy state lives at:
+
 ```text
-→ attacker calls read_secret (read ~/.ssh/id_rsa)
-  ✕ BLOCKED  path "…/.ssh/id_rsa" is outside the sandbox policy for "evil-mcp"
-
-→ attacker calls exfiltrate (POST stolen data to evil.example)
-  ✕ BLOCKED  network is disabled — blocked tool-call referencing https://evil.example/drop
-
-→ attacker calls nuke (rm -rf the user's home directory)
-  ✕ BLOCKED  path "/Users/you" is outside the sandbox policy for "evil-mcp"
-
-→ attacker calls shell_exec (shell out: curl | sh)
-  ✕ BLOCKED  tool "shell_exec" matches a dangerous-tool pattern
-
-✓ 4/4 attempts blocked
-  Without wardn, every call above would have run on your machine.
+~/.wardn/policy.json      sandbox policies
+~/.wardn/gateway.log      JSON-RPC event log (NDJSON)
+~/.wardn/backups/         client config backups
+~/.wardn/rewrites.json    active rewrite index
+~/.wardn/sandboxes/<name>/  per-server default sandbox roots
 ```
 
-Finally, route existing clients through wardn:
+`WARDN_HOME=/tmp/wardn-test` overrides the root, used by every test to keep the real user state
+untouched.
 
-```bash
-npx wardn rewrite apply
-npx wardn rewrite restore
-```
-
-`rewrite restore` puts the original config back byte-for-byte.
-
-## What it does
-
-| Flow | Status | What happens |
-|---|---:|---|
-| Discover | Done | Reads Claude Desktop, Cursor, and VS Code MCP configs. |
-| Scan | Done | Scores every server with explainable trust signals. |
-| Visualize | Done | Serves a local dashboard with trust badges, policies, and live logs. |
-| Gateway | Done | Proxies stdio MCP traffic and logs JSON-RPC calls. |
-| Sandbox | Done | Enforces filesystem, network, and env policies before tool-calls reach the server. |
-| Cross-client rewrite | Done | Rewrites client configs to route through wardn, with backups and restore. |
-
-## Features
-
-- **Local-first by default**: policies, logs, and backups live under `~/.wardn`.
-- **Explainable trust scores**: broad filesystem access, remote transport, unpinned packages,
-  arbitrary binaries, shell launchers, and credentials in env all show a human-readable reason.
-- **Policy-first sandboxing**: blocks out-of-policy `tools/call` requests before they reach the MCP
-  server. Docker adds optional container isolation when available.
-- **Byte-faithful gateway**: forwards MCP stdio traffic while observing JSON-RPC metadata for logs.
-- **Live dashboard**: Lynuxis dark UI, served by the local gateway daemon.
-- **Safe config rewrite**: all rewrites are backed up and reversible.
+---
 
 ## Commands
 
 ```text
-wardn scan [--from <dir>] [--json]
-wardn sandbox enable <name>  [--path <dir>]... [--allow-network] [--allow-env <key>]...
+wardn scan                           [--from <dir>] [--json]
+wardn sandbox enable <name>          [--path <dir>]... [--allow-network] [--allow-env <key>]...
 wardn sandbox disable <name>
-wardn sandbox status [<name>]
-wardn gateway run <name>     [--from <dir>]
-wardn gateway start          [--port <n>] [--host <h>] [--from <dir>]
-wardn rewrite apply          [--client <c>] [--invoke <tpl>] [--from <dir>]
-wardn rewrite restore        [--client <c>] [--from <dir>]
+wardn sandbox status                 [<name>]
+wardn gateway run <name>             [--from <dir>]
+wardn gateway start                  [--port <n>] [--host <h>] [--from <dir>]
+wardn rewrite apply                  [--client <c>] [--invoke <tpl>] [--from <dir>]
+wardn rewrite restore                [--client <c>] [--from <dir>]
 wardn rewrite status
-wardn demo                   [--fast]
+wardn demo                           [--fast]
 ```
 
-## Trust registry
+Every command exits non-zero when something risky is found or a policy is breached — wardn fits
+cleanly into CI.
 
-wardn ships a curated [`data/trust.json`](data/trust.json) that maps known MCP packages
-to a verified publisher. The scanner uses it on top of the heuristics so an official server
-shows a `Verified publisher: Anthropic` info signal, and a `knownBad: true` entry is
-treated as `RISKY` regardless of how innocent the config looks.
+---
 
-Spot a server we should add — or one we should flag? Open a
-[Trust registry entry](.github/ISSUE_TEMPLATE/trust-registry.yml) and we'll review it.
-
-## How sandboxing works
-
-When a policy is enabled, wardn enforces it in the gateway:
-
-1. **Spawn policy**: known servers such as `@modelcontextprotocol/server-filesystem` are spawned
-   with restricted filesystem arguments, filtered env vars, and optional Docker isolation.
-2. **Tool-call policy**: outgoing `tools/call` JSON-RPC messages are inspected. Paths outside the
-   whitelist or URLs while network is disabled are rejected before the MCP server sees them.
-3. **Visible feedback**: the scanner reflects the policy, so a broad filesystem server can move from
-   `RISKY` to `TRUSTED` once it is sandboxed.
-
-Files:
+## Tested
 
 ```text
-~/.wardn/policy.json      sandbox policies
-~/.wardn/gateway.log      JSON-RPC event log
-~/.wardn/backups/         client config backups
+$ npm run test:coverage
+
+ℹ tests 36
+ℹ pass 36
+ℹ fail 0
+
+File                 | % Stmts | % Branch | % Funcs | % Lines |
+---------------------|---------|----------|---------|---------|
+All files            |    83.5 |    74.61 |   90.36 |    83.5 |
 ```
 
-Use `WARDN_HOME=/tmp/wardn-test` to isolate test runs.
+CI matrix runs on Node 18 / 20 / 22 across Ubuntu, macOS, and Windows; the Ubuntu-Node-20 leg gates
+coverage at lines/functions ≥ 80% and branches ≥ 70%.
 
-## Development
+Validation covers:
+
+- gateway proxying a real `@modelcontextprotocol/server-filesystem`
+- sandbox rejection before server execution (path / network / dangerous-name)
+- policy store CRUD and scanner downgrade behaviour
+- rewrite apply/restore with byte-identical rollback
+- daemon HTTP API + SSE
+- dashboard build and `npm pack --dry-run`
+
+---
+
+## Develop
 
 ```bash
+git clone https://github.com/lynuxis2026-pixel/wardn.git
+cd wardn
 npm install
 npm test
-npm run build
-npm run dashboard:build
 npm run scan -- --from fixtures
-npm pack --dry-run
+npm run dashboard:build
 ```
 
-Validation currently covers:
+Requires Node ≥ 18. TypeScript, ESM, NodeNext imports with `.js` extensions. Five runtime deps
+(`commander`, `fastify`, `@fastify/cors`, `@fastify/static`, `picocolors`). Lean by design.
 
-- gateway proxying a real MCP filesystem server
-- sandbox rejection before server execution
-- policy store and scanner downgrade behavior
-- rewrite apply/restore with byte-identical rollback
-- dashboard build and package inclusion
-
-Requires Node 18 or newer. TypeScript, ESM, and NodeNext imports with `.js` extensions.
-
-## Contributing
-
-The highest-leverage PR is adding entries to the [trust registry](data/trust.json) —
-see [CONTRIBUTING.md](CONTRIBUTING.md). New scanner signals, sandbox enforcement gaps,
-and additional MCP-capable clients are also very welcome. Security issues go to
-[SECURITY.md](SECURITY.md), not the public tracker.
+---
 
 ## Roadmap
 
 The local MVP is complete. Next layers:
 
-- hosted/team policies
-- registry and marketplace signals
 - richer Linux-native isolation (bubblewrap / landlock)
-- team audit trails
-- model/router integrations
+- team / hosted tier with shared policies and audit trails
+- registry & marketplace signals (download counts, vulnerability advisories)
+- model / router integrations
 
-## License
+See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 
-MIT
+---
+
+## Contributing & security
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — the highest-leverage PR today is a trust-registry entry.
+- [SECURITY.md](SECURITY.md) — threat model + responsible disclosure mailbox. Security bugs go
+  there first, not the public tracker.
+
+A [Lynuxis](https://lynuxis.nl) project. **MIT** licensed.

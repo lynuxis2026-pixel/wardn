@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 460" role="img" aria-labelledby="sig-title sig-desc">
+  <title id="sig-title">wardn trust signals</title>
+  <desc id="sig-desc">Visual catalog of the trust signals wardn emits per discovered MCP server. Risky signals trigger a red badge, review signals an amber badge, info signals a cyan badge.</desc>
+
+  <defs>
+    <radialGradient id="sigbg" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#4db4dc" stop-opacity="0.06"/>
+      <stop offset="60%" stop-color="#4db4dc" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="880" height="460" fill="#000510"/>
+  <rect width="880" height="460" fill="url(#sigbg)"/>
+
+  <g font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace">
+    <text x="440" y="44" text-anchor="middle" font-size="11" fill="#6f93a8" letter-spacing="2.5">TRUST SIGNALS — EVERY FLAG IS EXPLAINABLE</text>
+
+    <!-- ===== RISKY column ===== -->
+    <g transform="translate(40, 76)">
+      <rect width="260" height="44" rx="6" fill="rgba(255,107,138,0.08)"/>
+      <rect width="6" height="44" rx="6" fill="#ff6b8a"/>
+      <rect x="20" y="14" width="56" height="16" rx="3" fill="rgba(255,107,138,0.18)"/>
+      <text x="48" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#ff6b8a" letter-spacing="1.5">RISKY</text>
+      <text x="86" y="26" font-size="13" font-weight="600" fill="#d6ecf6">broad-fs</text>
+      <text x="156" y="26" font-size="11" fill="#6f93a8">/ — entire disk</text>
+
+      <g transform="translate(0, 56)">
+        <rect width="260" height="44" rx="6" fill="rgba(255,107,138,0.08)"/>
+        <rect width="6" height="44" rx="6" fill="#ff6b8a"/>
+        <rect x="20" y="14" width="56" height="16" rx="3" fill="rgba(255,107,138,0.18)"/>
+        <text x="48" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#ff6b8a" letter-spacing="1.5">RISKY</text>
+        <text x="86" y="26" font-size="13" font-weight="600" fill="#d6ecf6">shell-exec</text>
+        <text x="170" y="26" font-size="11" fill="#6f93a8">bash · cmd · sh</text>
+      </g>
+
+      <g transform="translate(0, 112)">
+        <rect width="260" height="44" rx="6" fill="rgba(255,107,138,0.08)"/>
+        <rect width="6" height="44" rx="6" fill="#ff6b8a"/>
+        <rect x="20" y="14" width="56" height="16" rx="3" fill="rgba(255,107,138,0.18)"/>
+        <text x="48" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#ff6b8a" letter-spacing="1.5">RISKY</text>
+        <text x="86" y="26" font-size="13" font-weight="600" fill="#d6ecf6">known-bad</text>
+        <text x="174" y="26" font-size="11" fill="#6f93a8">flagged by registry</text>
+      </g>
+    </g>
+
+    <!-- ===== REVIEW column ===== -->
+    <g transform="translate(310, 76)">
+      <rect width="260" height="44" rx="6" fill="rgba(246,195,96,0.08)"/>
+      <rect width="6" height="44" rx="6" fill="#f6c360"/>
+      <rect x="20" y="14" width="62" height="16" rx="3" fill="rgba(246,195,96,0.18)"/>
+      <text x="51" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#f6c360" letter-spacing="1.5">REVIEW</text>
+      <text x="92" y="26" font-size="12" font-weight="600" fill="#d6ecf6">arbitrary-binary</text>
+
+      <g transform="translate(0, 56)">
+        <rect width="260" height="44" rx="6" fill="rgba(246,195,96,0.08)"/>
+        <rect width="6" height="44" rx="6" fill="#f6c360"/>
+        <rect x="20" y="14" width="62" height="16" rx="3" fill="rgba(246,195,96,0.18)"/>
+        <text x="51" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#f6c360" letter-spacing="1.5">REVIEW</text>
+        <text x="92" y="26" font-size="12" font-weight="600" fill="#d6ecf6">floating-version</text>
+      </g>
+
+      <g transform="translate(0, 112)">
+        <rect width="260" height="44" rx="6" fill="rgba(246,195,96,0.08)"/>
+        <rect width="6" height="44" rx="6" fill="#f6c360"/>
+        <rect x="20" y="14" width="62" height="16" rx="3" fill="rgba(246,195,96,0.18)"/>
+        <text x="51" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#f6c360" letter-spacing="1.5">REVIEW</text>
+        <text x="92" y="26" font-size="12" font-weight="600" fill="#d6ecf6">unofficial-source</text>
+      </g>
+
+      <g transform="translate(0, 168)">
+        <rect width="260" height="44" rx="6" fill="rgba(246,195,96,0.08)"/>
+        <rect width="6" height="44" rx="6" fill="#f6c360"/>
+        <rect x="20" y="14" width="62" height="16" rx="3" fill="rgba(246,195,96,0.18)"/>
+        <text x="51" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#f6c360" letter-spacing="1.5">REVIEW</text>
+        <text x="92" y="26" font-size="12" font-weight="600" fill="#d6ecf6">remote-transport</text>
+      </g>
+    </g>
+
+    <!-- ===== INFO column ===== -->
+    <g transform="translate(580, 76)">
+      <rect width="260" height="44" rx="6" fill="rgba(77,180,220,0.06)"/>
+      <rect width="6" height="44" rx="6" fill="#4db4dc"/>
+      <rect x="20" y="14" width="56" height="16" rx="3" fill="rgba(77,180,220,0.18)"/>
+      <text x="48" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#7fd0ee" letter-spacing="1.5">INFO</text>
+      <text x="86" y="26" font-size="13" font-weight="600" fill="#d6ecf6">verified</text>
+      <text x="160" y="26" font-size="11" fill="#6f93a8">trust registry</text>
+
+      <g transform="translate(0, 56)">
+        <rect width="260" height="44" rx="6" fill="rgba(77,180,220,0.06)"/>
+        <rect width="6" height="44" rx="6" fill="#4db4dc"/>
+        <rect x="20" y="14" width="56" height="16" rx="3" fill="rgba(77,180,220,0.18)"/>
+        <text x="48" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#7fd0ee" letter-spacing="1.5">INFO</text>
+        <text x="86" y="26" font-size="13" font-weight="600" fill="#d6ecf6">official</text>
+        <text x="156" y="26" font-size="11" fill="#6f93a8">@modelcontextprotocol</text>
+      </g>
+
+      <g transform="translate(0, 112)">
+        <rect width="260" height="44" rx="6" fill="rgba(77,180,220,0.06)"/>
+        <rect width="6" height="44" rx="6" fill="#4db4dc"/>
+        <rect x="20" y="14" width="56" height="16" rx="3" fill="rgba(77,180,220,0.18)"/>
+        <text x="48" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#7fd0ee" letter-spacing="1.5">INFO</text>
+        <text x="86" y="26" font-size="13" font-weight="600" fill="#d6ecf6">holds-secrets</text>
+        <text x="190" y="26" font-size="11" fill="#6f93a8">api · token · key</text>
+      </g>
+
+      <g transform="translate(0, 168)">
+        <rect width="260" height="44" rx="6" fill="rgba(77,180,220,0.06)"/>
+        <rect width="6" height="44" rx="6" fill="#4db4dc"/>
+        <rect x="20" y="14" width="56" height="16" rx="3" fill="rgba(77,180,220,0.18)"/>
+        <text x="48" y="25" text-anchor="middle" font-size="9" font-weight="600" fill="#7fd0ee" letter-spacing="1.5">INFO</text>
+        <text x="86" y="26" font-size="13" font-weight="600" fill="#d6ecf6">sandboxed ⛨</text>
+        <text x="200" y="26" font-size="11" fill="#6f93a8">policy active</text>
+      </g>
+    </g>
+
+    <!-- footer -->
+    <line x1="40" y1="400" x2="840" y2="400" stroke="rgba(77,180,220,0.16)"/>
+    <text x="40" y="424" font-size="11" fill="#6f93a8">Every signal carries a one-line reason. Risky breaks CI — non-zero exit on </text>
+    <text x="606" y="424" font-size="11" fill="#7fd0ee">npx wardn scan</text>
+    <text x="40" y="442" font-size="11" fill="#3d5a6e">Sandboxing a server removes the signals its policy neutralizes — the trust level reflects what the server can *actually* do at runtime.</text>
+  </g>
+</svg>
