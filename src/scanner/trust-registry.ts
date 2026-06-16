@@ -28,29 +28,43 @@ export interface TrustRegistry {
 
 let cached: TrustRegistry | undefined;
 
-function registryPath(): string {
+function bundledRegistryPath(): string {
   const here = path.dirname(fileURLToPath(import.meta.url));
   // src/scanner → ../../data and dist/scanner → ../../data both land in the
   // repo's data/trust.json because the depth is the same.
   return path.resolve(here, "..", "..", "data", "trust.json");
 }
 
+function overrideRegistryPath(): string {
+  const home = process.env.WARDN_HOME ?? path.join(require_os_homedir(), ".wardn");
+  return path.join(home, "trust-registry.json");
+}
+
+// Avoid pulling `os` into the load critical path twice — local helper.
+function require_os_homedir(): string {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return (process.env.HOME ?? process.env.USERPROFILE ?? ".");
+}
+
 /**
- * Load the curated trust data once per process. A missing or corrupt file
- * silently degrades to "no entries" — the scanner falls back to heuristics
- * exactly like before.
+ * Load the curated trust data once per process. Looks first at the live
+ * override at `~/.wardn/trust-registry.json` (refreshed by
+ * `wardn registry update`), then falls back to the bundled `data/trust.json`.
+ * A missing or corrupt file silently degrades to "no entries".
  */
 export function loadTrustRegistry(): TrustRegistry {
   if (cached) return cached;
-  try {
-    const text = fs.readFileSync(registryPath(), "utf8");
-    const parsed = JSON.parse(text) as TrustRegistry;
-    if (parsed && typeof parsed === "object" && parsed.packages && typeof parsed.packages === "object") {
-      cached = parsed;
-      return parsed;
+  for (const candidate of [overrideRegistryPath(), bundledRegistryPath()]) {
+    try {
+      const text = fs.readFileSync(candidate, "utf8");
+      const parsed = JSON.parse(text) as TrustRegistry;
+      if (parsed && typeof parsed === "object" && parsed.packages && typeof parsed.packages === "object") {
+        cached = parsed;
+        return parsed;
+      }
+    } catch {
+      /* try the next candidate */
     }
-  } catch {
-    /* fall through */
   }
   cached = {
     version: 1,

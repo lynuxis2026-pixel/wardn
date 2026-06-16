@@ -29,7 +29,7 @@
     "dashboard:dev": "npm --prefix dashboard run dev",
     "prepack": "npm run build && npm run dashboard:build",
     "start": "node dist/index.js",
-    "test": "node --import tsx --test tests/proxy.integration.test.ts tests/sandbox.test.ts tests/gateway-sandbox.integration.test.ts tests/rewrite.test.ts tests/demo.integration.test.ts tests/trust-registry.test.ts tests/discovery.test.ts tests/daemon.test.ts tests/registry.test.ts",
+    "test": "node --import tsx --test tests/proxy.integration.test.ts tests/sandbox.test.ts tests/gateway-sandbox.integration.test.ts tests/rewrite.test.ts tests/demo.integration.test.ts tests/trust-registry.test.ts tests/discovery.test.ts tests/daemon.test.ts tests/registry.test.ts tests/bubblewrap.test.ts tests/doctor.test.ts tests/watch.test.ts tests/report.test.ts tests/registry-update.test.ts",
     "test:coverage": "c8 --reporter=text --reporter=lcov --include=\"src/**/*.ts\" --exclude=\"src/index.ts\" --exclude=\"src/cli/**\" --check-coverage --lines=80 --functions=80 --branches=70 npm test"
   },
   "engines": {

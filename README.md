@@ -10,7 +10,7 @@ tool-call through a local gateway, and lets you sandbox the dangerous ones.
 
 [![npm version](https://img.shields.io/npm/v/wardn.svg?color=4db4dc&labelColor=000510)](https://www.npmjs.com/package/wardn)
 [![CI](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml/badge.svg)](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-83%25-7be0a4.svg?labelColor=000510)](#tested)
+[![coverage](https://img.shields.io/badge/coverage-85%25-7be0a4.svg?labelColor=000510)](#tested)
 [![license](https://img.shields.io/badge/license-MIT-4db4dc.svg?labelColor=000510)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A518-4db4dc.svg?labelColor=000510)](package.json)
 
@@ -189,6 +189,19 @@ Spawns the bundled [evil-mcp](examples/evil-mcp/) through the gateway under a ti
 four attack vectors (path traversal, exfiltration, destructive command, shell injection), and shows
 each one rejected before the server is reached.
 
+### 6. Keep it healthy
+
+```bash
+npx wardn doctor                                 # diagnose the local setup
+npx wardn watch --once                           # CI mode: exits non-zero on a new risky finding
+npx wardn report --stdout > trust.md             # markdown trust report for stakeholders
+npx wardn registry update                        # pull the latest curated trust data
+```
+
+`wardn watch` keeps a snapshot at `~/.wardn/scan-snapshot.json` so it can show diffs — `+ new risky
+server`, `~ X went from RISKY to TRUSTED`, `- Y removed`. `wardn registry update` writes a live
+override at `~/.wardn/trust-registry.json` that the scanner prefers over the bundled data.
+
 ---
 
 ## Trust registry — the community layer
@@ -244,10 +257,15 @@ wardn sandbox disable <name>
 wardn sandbox status                 [<name>]
 wardn gateway run <name>             [--from <dir>]
 wardn gateway start                  [--port <n>] [--host <h>] [--from <dir>]
-wardn rewrite apply                  [--client <c>] [--invoke <tpl>] [--from <dir>]
+wardn rewrite apply                  [--client <c>] [--invoke <tpl>] [--from <dir>] [--dry-run]
 wardn rewrite restore                [--client <c>] [--from <dir>]
 wardn rewrite status
 wardn demo                           [--fast]
+wardn doctor
+wardn watch                          [--once] [--interval <sec>] [--from <dir>]
+wardn report                         [--stdout] [--out <file>] [--from <dir>]
+wardn registry update                [--url <url>]
+wardn registry status
 ```
 
 Every command exits non-zero when something risky is found or a policy is breached — wardn fits
@@ -260,13 +278,13 @@ cleanly into CI.
 ```text
 $ npm run test:coverage
 
-ℹ tests 36
-ℹ pass 36
+ℹ tests 59
+ℹ pass 59
 ℹ fail 0
 
 File                 | % Stmts | % Branch | % Funcs | % Lines |
 ---------------------|---------|----------|---------|---------|
-All files            |    83.5 |    74.61 |   90.36 |    83.5 |
+All files            |    85.3 |    75.28 |   94.84 |    85.3 |
 ```
 
 CI matrix runs on Node 18 / 20 / 22 across Ubuntu, macOS, and Windows; the Ubuntu-Node-20 leg gates
@@ -301,12 +319,20 @@ Requires Node ≥ 18. TypeScript, ESM, NodeNext imports with `.js` extensions. F
 
 ## Roadmap
 
-The local MVP is complete. Next layers:
+The local control plane is complete. What's still on the table:
 
-- richer Linux-native isolation (bubblewrap / landlock)
-- team / hosted tier with shared policies and audit trails
-- registry & marketplace signals (download counts, vulnerability advisories)
-- model / router integrations
+- **team / hosted tier** with shared policies, audit trails, and cross-machine visibility — the
+  paid layer; explicitly out of scope for the local OSS core.
+- **marketplace signals** (npm download counts, CVE / GH advisories) merged into the trust registry.
+- **model / router integrations** if there's demand from operators wanting one console for both AI
+  agents and the MCP servers they call.
+
+Everything in v0 of the roadmap shipped:
+
+- ✅ richer Linux-native isolation (`bubblewrap` detection + spawn wrap)
+- ✅ daemon auth token + loopback `/api/token`
+- ✅ `wardn doctor` / `watch` / `report` / `rewrite --dry-run`
+- ✅ live trust-registry override via `wardn registry update`
 
 See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 

@@ -4,6 +4,7 @@ import pc from "picocolors";
 import { PolicyStore, defaultPolicyFor } from "../sandbox/store.js";
 import { findServerByName } from "../gateway/registry.js";
 import { isDockerAvailable } from "../sandbox/docker.js";
+import { isBubblewrapAvailable } from "../sandbox/bubblewrap.js";
 import type { ServerPolicy } from "../sandbox/types.js";
 
 export interface EnableOptions {
@@ -48,7 +49,12 @@ export function enableSandbox(name: string, opts: EnableOptions): number {
   process.stdout.write(`  ${pc.dim("filesystem")}  ${policy.filesystem.paths.join(", ") || pc.dim("(none)")}\n`);
   process.stdout.write(`  ${pc.dim("network   ")}  ${policy.network ? pc.yellow("on") : pc.green("off")}\n`);
   process.stdout.write(`  ${pc.dim("env       ")}  ${policy.envWhitelist.length ? policy.envWhitelist.join(", ") : pc.dim("(baseline only)")}\n`);
-  process.stdout.write(`  ${pc.dim("isolation ")}  ${isDockerAvailable() ? pc.green("docker + policy") : pc.cyan("policy-only") + pc.dim(" (Docker not detected)")}\n\n`);
+  const isolation = isDockerAvailable()
+    ? pc.green("docker + policy")
+    : isBubblewrapAvailable()
+    ? pc.green("bubblewrap + policy")
+    : pc.cyan("policy-only") + pc.dim(" (no container runtime detected)");
+  process.stdout.write(`  ${pc.dim("isolation ")}  ${isolation}\n\n`);
   process.stdout.write(pc.dim("  Run ") + pc.cyan(`wardn gateway run ${name}`) + pc.dim(" to spawn the server inside the sandbox.\n\n"));
   return 0;
 }

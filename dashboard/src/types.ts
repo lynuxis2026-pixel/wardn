@@ -68,4 +68,5 @@ export interface StatusPayload {
   logFile: string;
   docker: boolean;
   dashboard: string;
+  tokenFile?: string;
 }

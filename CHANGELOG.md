@@ -7,6 +7,40 @@ the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **`wardn doctor`** — diagnose the local setup: Node version, WARDN_HOME, MCP-capable clients,
+  discovered servers, sandbox tooling (Docker / bubblewrap), policy validity, trust-registry
+  source, dashboard build.
+- **`wardn watch [--once] [--interval N]`** — periodic re-scan with diff vs.
+  `~/.wardn/scan-snapshot.json`. Surfaces `+ new`, `~ changed`, `- removed`. Exits non-zero on a
+  fresh `RISKY` finding — drop-in CI guard against config drift.
+- **`wardn report`** — markdown trust report (summary, per-server table, sandbox policies,
+  rewrite status). `--stdout` for piping; default writes `./wardn-report-YYYY-MM-DD.md`.
+- **`wardn registry update / status`** — pulls the latest curated registry from the repo's
+  `main` branch, validates the shape, stores it at `~/.wardn/trust-registry.json`. The scanner
+  prefers the live override over the bundled `data/trust.json`.
+- **`wardn rewrite apply --dry-run`** — preview every config that would be touched without
+  writing to disk (no mutation, no backup, no index entry).
+- **Bubblewrap isolation** for Linux — `src/sandbox/bubblewrap.ts` detects `bwrap` and wraps
+  spawn with `--unshare-net`, `--ro-bind /`, and policy bind-mounts. Used automatically when
+  Docker is absent.
+- **Daemon auth token** — generated once on first start at `~/.wardn/api-token` (32 hex bytes,
+  mode 0600). All write endpoints require `Authorization: Bearer <token>`. The dashboard reads
+  the token from a loopback-only `/api/token` endpoint.
+
+### Changed
+- Trust registry loader now reads `~/.wardn/trust-registry.json` first, then falls back to
+  bundled `data/trust.json` — a `wardn registry update` is enough to refresh the catalog without
+  reinstalling the package.
+- Sandbox enable CLI shows the active isolation tier
+  (`docker + policy` / `bubblewrap + policy` / `policy-only`).
+
+### Security
+- The daemon's mutating endpoints (`POST /api/sandbox/:name`, future write routes) now require
+  an authorization header. Previously the warning at startup was the only protection. Read
+  endpoints stay open so the dashboard works without the round-trip.
+
+## [0.1.0] — first launch
+### Added
 - Curated trust registry at `data/trust.json` with verified-publisher lookups
   for the major MCP server packages (Anthropic, Microsoft Playwright, Notion,
   Upstash, Cloudflare). New `verified` info signal in scan output.
@@ -54,5 +88,6 @@ the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Cross-client config rewrite (`wardn rewrite apply`/`restore`) with byte-
   identical backups.
 
-[Unreleased]: https://github.com/lynuxis2026-pixel/wardn/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/lynuxis2026-pixel/wardn/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/lynuxis2026-pixel/wardn/releases/tag/v0.1.0
 [0.0.1]: https://github.com/lynuxis2026-pixel/wardn/releases/tag/v0.0.1

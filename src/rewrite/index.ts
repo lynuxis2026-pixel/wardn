@@ -86,10 +86,12 @@ interface ApplyOptions {
   client?: string;
   from?: string;
   invokeTemplate?: string;
+  /** Preview mode — describe the changes but do not touch any file on disk. */
+  dryRun?: boolean;
 }
 
 export interface ApplyResult {
-  applied: Array<{ client: string; file: string; backup: string; servers: string[] }>;
+  applied: Array<{ client: string; file: string; backup: string; servers: string[]; dryRun?: true }>;
   skipped: Array<{ client: string; file: string; reason: string }>;
 }
 
@@ -102,7 +104,7 @@ export function applyRewrite(opts: ApplyOptions = {}): ApplyResult {
 
   const tsStamp = process.env.WARDN_TIMESTAMP ?? new Date().toISOString().replace(/[:.]/g, "-");
   const backupRoot = path.join(wardnHome(), "backups");
-  fs.mkdirSync(backupRoot, { recursive: true });
+  if (!opts.dryRun) fs.mkdirSync(backupRoot, { recursive: true });
 
   for (const target of targets) {
     if (idx.entries.some((e) => e.configFile === target.file)) {
@@ -129,9 +131,8 @@ export function applyRewrite(opts: ApplyOptions = {}): ApplyResult {
       continue;
     }
 
-    // backup first
     const backupFile = path.join(backupRoot, `${target.client}-${tsStamp}.json`);
-    fs.writeFileSync(backupFile, raw);
+    if (!opts.dryRun) fs.writeFileSync(backupFile, raw);
 
     const touched: string[] = [];
     for (const [name, entry] of Object.entries(map)) {
@@ -141,6 +142,11 @@ export function applyRewrite(opts: ApplyOptions = {}): ApplyResult {
       const { command, args } = tokenizeTemplate(template, name);
       map[name] = { command, args };
       touched.push(name);
+    }
+
+    if (opts.dryRun) {
+      applied.push({ client: target.client, file: target.file, backup: backupFile, servers: touched, dryRun: true });
+      continue;
     }
 
     fs.writeFileSync(target.file, JSON.stringify(parsed, null, 2) + "\n");
@@ -156,7 +162,7 @@ export function applyRewrite(opts: ApplyOptions = {}): ApplyResult {
     applied.push({ client: target.client, file: target.file, backup: backupFile, servers: touched });
   }
 
-  writeIndex(idx);
+  if (!opts.dryRun) writeIndex(idx);
   return { applied, skipped };
 }
 

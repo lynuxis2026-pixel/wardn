@@ -10,6 +10,14 @@ import { scanAll, summarize } from "../scanner/index.js";
 import { PolicyStore, defaultPolicyFor } from "../sandbox/store.js";
 import { isDockerAvailable } from "../sandbox/docker.js";
 import type { ServerPolicy } from "../sandbox/types.js";
+import {
+  loadOrCreateApiToken,
+  isLoopbackIp,
+  requiresAuth,
+  extractBearer,
+  compareToken,
+  tokenFilePath,
+} from "./auth.js";
 
 export interface DaemonOptions {
   port: number;
@@ -100,8 +108,19 @@ interface SandboxBody {
 }
 
 export async function startDaemon(opts: DaemonOptions): Promise<DaemonHandle> {
-  const app = Fastify({ logger: false });
+  const app = Fastify({ logger: false, trustProxy: false });
   await app.register(fastifyCors, { origin: true });
+
+  const apiToken = loadOrCreateApiToken();
+  // Reject mutating requests that don't carry the token. Read endpoints stay
+  // open so the dashboard works without round-tripping through /api/token.
+  app.addHook("onRequest", async (req, reply) => {
+    if (!requiresAuth(req.method)) return;
+    const presented = extractBearer(req.headers.authorization);
+    if (!presented || !compareToken(presented, apiToken)) {
+      reply.code(401).send({ error: "missing or invalid Authorization: Bearer <token>" });
+    }
+  });
 
   const dashboardDir = opts.dashboardDir ?? defaultDashboardDir();
   const dashboardExists = fs.existsSync(path.join(dashboardDir, "index.html"));
@@ -137,7 +156,18 @@ export async function startDaemon(opts: DaemonOptions): Promise<DaemonHandle> {
     logFile: opts.logger.filePath(),
     docker: isDockerAvailable(),
     dashboard: dashboardExists ? "served" : "not-built",
+    tokenFile: tokenFilePath(),
   }));
+
+  // Loopback-only token endpoint so the same-machine dashboard can read the
+  // token without exposing it to anyone reachable on the network.
+  app.get("/api/token", async (req, reply) => {
+    if (!isLoopbackIp(req.ip)) {
+      reply.code(403).send({ error: "token is only readable from loopback" });
+      return;
+    }
+    reply.send({ token: apiToken });
+  });
 
   app.get("/api/scan", async () => {
     const servers = opts.scanFrom ? discoverFromDir(opts.scanFrom) : discoverFromKnownClients();

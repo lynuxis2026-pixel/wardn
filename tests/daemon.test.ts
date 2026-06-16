@@ -100,13 +100,16 @@ test("POST /api/sandbox/:name persists a policy", async (t) => {
   const ctx = await startTestDaemon();
   t.after(() => ctx.cleanup());
 
+  const tokenRes = await ctx.daemon.app.inject({ method: "GET", url: "/api/token" });
+  const token = (tokenRes.json() as { token: string }).token;
+
   const safe = path.join(ctx.home, "safe");
   fs.mkdirSync(safe);
   const post = await ctx.daemon.app.inject({
     method: "POST",
     url: "/api/sandbox/filesystem",
     payload: { enabled: true, paths: [safe], network: false },
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
   });
   assert.equal(post.statusCode, 200);
   const body = post.json() as SandboxBody;
@@ -126,10 +129,74 @@ test("POST /api/sandbox/:name with no body toggles the existing policy", async (
   const ctx = await startTestDaemon();
   t.after(() => ctx.cleanup());
 
+  const tokenRes = await ctx.daemon.app.inject({ method: "GET", url: "/api/token" });
+  const token = (tokenRes.json() as { token: string }).token;
+  const headers = { authorization: `Bearer ${token}` };
+
   // First call: no body → creates default-locked enabled policy
-  const first = await ctx.daemon.app.inject({ method: "POST", url: "/api/sandbox/github", payload: {} });
+  const first = await ctx.daemon.app.inject({
+    method: "POST",
+    url: "/api/sandbox/github",
+    payload: {},
+    headers,
+  });
   assert.equal((first.json() as SandboxBody).policy.enabled, true);
   // Second call: no body → toggles to disabled
-  const second = await ctx.daemon.app.inject({ method: "POST", url: "/api/sandbox/github", payload: {} });
+  const second = await ctx.daemon.app.inject({
+    method: "POST",
+    url: "/api/sandbox/github",
+    payload: {},
+    headers,
+  });
   assert.equal((second.json() as SandboxBody).policy.enabled, false);
+});
+
+test("POST /api/sandbox/:name without token is rejected with 401", async (t) => {
+  const ctx = await startTestDaemon();
+  t.after(() => ctx.cleanup());
+
+  const res = await ctx.daemon.app.inject({ method: "POST", url: "/api/sandbox/x", payload: {} });
+  assert.equal(res.statusCode, 401);
+  const body = res.json() as { error: string };
+  assert.match(body.error, /missing or invalid Authorization/i);
+});
+
+test("POST /api/sandbox/:name with a wrong token is rejected with 401", async (t) => {
+  const ctx = await startTestDaemon();
+  t.after(() => ctx.cleanup());
+
+  const res = await ctx.daemon.app.inject({
+    method: "POST",
+    url: "/api/sandbox/x",
+    payload: {},
+    headers: { authorization: "Bearer not-the-real-token" },
+  });
+  assert.equal(res.statusCode, 401);
+});
+
+test("GET /api/token returns the token over loopback", async (t) => {
+  const ctx = await startTestDaemon();
+  t.after(() => ctx.cleanup());
+
+  const res = await ctx.daemon.app.inject({
+    method: "GET",
+    url: "/api/token",
+    remoteAddress: "127.0.0.1",
+  });
+  assert.equal(res.statusCode, 200);
+  const body = res.json() as { token: string };
+  assert.ok(body.token);
+  assert.ok(body.token.length >= 32);
+});
+
+test("GET /api/token refuses non-loopback ips", async (t) => {
+  const ctx = await startTestDaemon();
+  t.after(() => ctx.cleanup());
+
+  const res = await ctx.daemon.app.inject({
+    method: "GET",
+    url: "/api/token",
+    remoteAddress: "10.0.0.5",
+  });
+  assert.equal(res.statusCode, 403);
 });

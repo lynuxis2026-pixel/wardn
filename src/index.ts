@@ -6,6 +6,10 @@ import { runGateway, startGatewayDaemon } from "./cli/gateway.js";
 import { enableSandbox, disableSandbox, showSandbox } from "./cli/sandbox.js";
 import { applyCommand, restoreCommand, statusCommand } from "./cli/rewrite.js";
 import { runDemo } from "./cli/demo.js";
+import { runDoctor } from "./cli/doctor.js";
+import { runWatch } from "./cli/watch.js";
+import { runReport } from "./cli/report.js";
+import { runRegistryUpdate, runRegistryStatus } from "./cli/registry.js";
 
 const program = new Command();
 
@@ -92,7 +96,8 @@ rewrite
   .option("--client <name>", "limit to a specific client (claude-desktop / cursor / vscode)")
   .option("--invoke <template>", `command template; {name} is substituted (default: "${"npx -y wardn gateway run {name}"}")`)
   .option("--from <dir>", "rewrite JSON configs in <dir> instead of the standard locations")
-  .action((opts: { client?: string; invoke?: string; from?: string }) => {
+  .option("--dry-run", "preview what would change without touching any file")
+  .action((opts: { client?: string; invoke?: string; from?: string; dryRun?: boolean }) => {
     process.exitCode = applyCommand(opts);
   });
 
@@ -119,6 +124,52 @@ program
   .action(async (opts: { fast?: boolean }) => {
     const r = await runDemo({ fast: opts.fast });
     process.exitCode = r.reachedServer === 0 ? 0 : 1;
+  });
+
+program
+  .command("doctor")
+  .description("Diagnose the local setup — Node version, client configs, sandbox tooling, dashboard")
+  .action(() => {
+    process.exitCode = runDoctor();
+  });
+
+program
+  .command("watch")
+  .description("Rescan periodically and surface new/changed servers — exits non-zero on a fresh risky finding")
+  .option("--once", "scan once and exit (CI mode)")
+  .option("-i, --interval <sec>", "seconds between scans", (v) => Number.parseInt(v, 10), 30)
+  .option("--from <dir>", "scan JSON configs in a directory instead of the standard locations")
+  .action(async (opts: { once?: boolean; interval?: number; from?: string }) => {
+    process.exitCode = await runWatch({ once: opts.once, intervalSec: opts.interval, from: opts.from });
+  });
+
+program
+  .command("report")
+  .description("Generate a markdown trust report (great for CI artefacts or sharing with the team)")
+  .option("--stdout", "write to stdout instead of a file")
+  .option("-o, --out <file>", "output path (default: ./wardn-report-YYYY-MM-DD.md)")
+  .option("--from <dir>", "scan JSON configs in a directory instead of the standard locations")
+  .action((opts: { stdout?: boolean; out?: string; from?: string }) => {
+    process.exitCode = runReport(opts);
+  });
+
+const registry = program
+  .command("registry")
+  .description("Manage the curated trust registry");
+
+registry
+  .command("update")
+  .description("Pull the latest data/trust.json from the wardn repo")
+  .option("--url <url>", "override the registry URL")
+  .action(async (opts: { url?: string }) => {
+    process.exitCode = await runRegistryUpdate(opts);
+  });
+
+registry
+  .command("status")
+  .description("Show the current trust-registry source + freshness")
+  .action(() => {
+    process.exitCode = runRegistryStatus();
   });
 
 program.parse();

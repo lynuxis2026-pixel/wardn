@@ -6,6 +6,7 @@ import { findServerByName } from "../gateway/registry.js";
 import { PolicyStore } from "../sandbox/store.js";
 import { applySpawnPolicy, decideOutgoing, identifyKind } from "../sandbox/enforce.js";
 import { dockerizeSpawn, isDockerAvailable } from "../sandbox/docker.js";
+import { bubblewrapSpawn, isBubblewrapAvailable } from "../sandbox/bubblewrap.js";
 
 export interface GatewayRunOptions {
   from?: string;
@@ -44,7 +45,15 @@ export async function runGateway(name: string, opts: GatewayRunOptions): Promise
 
   if (sandboxed && policy) {
     const rewritten = applySpawnPolicy(server, policy);
-    const final = isDockerAvailable() ? dockerizeSpawn(rewritten, { policy }) : rewritten;
+    let isolation: "docker+policy" | "bubblewrap+policy" | "policy-only" = "policy-only";
+    let final = rewritten;
+    if (isDockerAvailable()) {
+      final = dockerizeSpawn(rewritten, { policy });
+      isolation = "docker+policy";
+    } else if (isBubblewrapAvailable()) {
+      final = bubblewrapSpawn(rewritten, policy);
+      isolation = "bubblewrap+policy";
+    }
     spawn = final;
     enforcer = {
       decide: (line: string) => {
@@ -58,7 +67,7 @@ export async function runGateway(name: string, opts: GatewayRunOptions): Promise
       ts: new Date().toISOString(),
       server: server.name,
       direction: "system",
-      message: `sandbox active (${isDockerAvailable() ? "docker+policy" : "policy-only"}, kind=${identifyKind(server)}): ${final.changes.join("; ") || "no spawn changes"}`,
+      message: `sandbox active (${isolation}, kind=${identifyKind(server)}): ${final.changes.join("; ") || "no spawn changes"}`,
     });
   }
 

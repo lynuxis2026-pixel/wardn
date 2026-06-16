@@ -60,7 +60,24 @@ Lopend geheugen: beslissingen, status, openstaande punten. Nieuwste bovenaan per
 - ✅ **Packaging-smoke**: `package.json` neemt `dist`, `dashboard/dist`, `assets`, `data`, en
   `examples/evil-mcp` mee in de npm-tarball; `prepack` bouwt CLI + dashboard. Geverifieerd met
   `npm pack --dry-run` én install-from-tarball.
-- ✅ **100%-score-audit** (laatste ronde):
+- ✅ **Roadmap-clearing ronde** (alles wat op de roadmap stond + mijn eigen toevoegingen):
+  - `wardn doctor` — diagnose suite (node, WARDN_HOME, clients, servers, sandbox tooling, policy,
+    trust registry source, dashboard build).
+  - `wardn watch [--once] [--interval N] [--from]` — periodic rescan, persists snapshot,
+    diffs (+/~/-), non-zero exit op nieuwe risky. Snapshot file: `~/.wardn/scan-snapshot.json`.
+  - `wardn report [--stdout] [--out] [--from]` — markdown trust-report (summary + servers tabel +
+    signal-redenen + sandbox policies + rewrites).
+  - `wardn registry update [--url]` + `wardn registry status` — pulls live `data/trust.json` van
+    main branch; scanner prefereert `~/.wardn/trust-registry.json` boven bundled.
+  - `wardn rewrite apply --dry-run` — preview-modus, schrijft nul bytes (geverifieerd via diff).
+  - `src/sandbox/bubblewrap.ts` — Linux-native isolatie: detect `bwrap`, wrap spawn met
+    `--unshare-net`, `--ro-bind /`, bind-mounts per policy-pad. Gateway gebruikt automatisch
+    Docker > bubblewrap > policy-only. CLI laat de gekozen tier zien bij `sandbox enable`.
+  - `src/gateway/auth.ts` — daemon auth token. Persistent file `~/.wardn/api-token` (32 hex bytes,
+    mode 0600), `Authorization: Bearer` required op alle write-endpoints (POST/PUT/PATCH/DELETE).
+    Read endpoints blijven open; dashboard haalt token via loopback-only `GET /api/token`.
+    Dashboard SDK cached de token na eerste fetch en zet header bij toggle automatisch.
+- ✅ **100%-score-audit** (vorige ronde):
   - Discovery + daemon HTTP-API + registry zijn nu apart getest (`tests/discovery.test.ts`,
     `tests/daemon.test.ts` via Fastify `inject()`, `tests/registry.test.ts`). 36 tests groen.
   - Coverage via `c8`: lines 83.5 / functions 90.36 / branches 74.61 / statements 83.5 — boven alle
@@ -106,7 +123,7 @@ Lopend geheugen: beslissingen, status, openstaande punten. Nieuwste bovenaan per
 
 ## Test-state
 
-- `npm test` → 36 tests, allemaal groen:
+- `npm test` → 59 tests, allemaal groen:
   - proxy.integration: `tools/list` door echte filesystem-server, log heeft beide richtingen + duur
   - gateway-sandbox.integration: out-of-policy `tools/call` geblokkeerd vóór de server
   - sandbox (7 unit tests): store, spawn-rewrite, decideOutgoing (path / net / non-tool), scanner
@@ -120,8 +137,17 @@ Lopend geheugen: beslissingen, status, openstaande punten. Nieuwste bovenaan per
   - daemon (4): GET /api/status, GET /api/scan, POST /api/sandbox/:name with body, no-body toggle
   - registry (3): findServerByName resolve, unknown name, multi-client name conflict
   - sandbox (extra): camelCase dangerous-tool detection, safe-name no-block, allowedTools override
-- `npm run test:coverage` → lines 83.5% / functions 90.36% / branches 74.61% / statements 83.5%.
+- `npm run test:coverage` → lines 85.3% / functions 94.84% / branches 75.28% / statements 85.3%.
   Allemaal boven de gates (lines/functions ≥80%, branches ≥70%).
+- Extra suites toegevoegd in deze ronde:
+  - bubblewrap (3 tests, includes Linux-only smoke skip op andere platforms)
+  - doctor (2 tests, dashboard pass/fail paden)
+  - watch (4 tests, baseline / no-diff / new-risky-detection / transition-only)
+  - report (2 tests, sections + empty fixture)
+  - registry-update (6 tests, validatie + override → scanner pickup + status reporting)
+  - daemon auth (4 extra tests: 401 zonder token, 401 met foute token, /api/token over loopback,
+    /api/token 403 voor non-loopback)
+  - rewrite dry-run (geen mutatie, geen backup, geen index entry).
 - Extra smokes groen: `npm run build`, `npm run dashboard:build`, daemon API (`/api/status`,
   `/api/scan`, `POST /api/sandbox/filesystem`), rewrite apply/restore op fixturekopieën, en
   install-from-tarball.

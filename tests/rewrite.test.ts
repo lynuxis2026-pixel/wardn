@@ -86,6 +86,33 @@ test("rewrite restore puts the file back exactly as it was", () => {
   delete process.env.WARDN_TIMESTAMP;
 });
 
+test("rewrite apply --dry-run touches no files but reports what would change", () => {
+  const { fixtureDir, wardnHome } = setupFixtures();
+  process.env.WARDN_HOME = wardnHome;
+  process.env.WARDN_TIMESTAMP = "dry-stamp";
+
+  const configFile = path.join(fixtureDir, "claude_desktop_config.json");
+  const before = fs.readFileSync(configFile, "utf8");
+
+  const result = applyRewrite({ from: fixtureDir, dryRun: true });
+
+  assert.equal(result.applied.length, 1);
+  assert.equal(result.applied[0].dryRun, true);
+  assert.deepEqual(result.applied[0].servers.sort(), ["filesystem", "github"]);
+
+  // file must be byte-identical
+  assert.equal(fs.readFileSync(configFile, "utf8"), before);
+  // no backup written
+  assert.equal(fs.existsSync(result.applied[0].backup), false, "dry run should not create a backup");
+  // rewrite index unchanged
+  const index = path.join(wardnHome, "rewrites.json");
+  assert.equal(fs.existsSync(index), false, "dry run should not write rewrites.json");
+
+  fs.rmSync(wardnHome, { recursive: true, force: true });
+  delete process.env.WARDN_HOME;
+  delete process.env.WARDN_TIMESTAMP;
+});
+
 test("rewrite apply skips a file that's already been rewritten", () => {
   const { fixtureDir, wardnHome } = setupFixtures();
   process.env.WARDN_HOME = wardnHome;

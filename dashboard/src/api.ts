@@ -8,6 +8,19 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
+let cachedToken: string | undefined;
+
+async function getToken(): Promise<string> {
+  if (cachedToken) return cachedToken;
+  const res = await fetch("/api/token");
+  if (!res.ok) {
+    throw new Error(`could not read API token (${res.status}). The daemon may not be running on loopback.`);
+  }
+  const body = (await res.json()) as { token: string };
+  cachedToken = body.token;
+  return cachedToken;
+}
+
 export function fetchScan(): Promise<ScanPayload> {
   return fetch("/api/scan").then((r) => jsonOrThrow<ScanPayload>(r));
 }
@@ -23,10 +36,18 @@ export interface ToggleSandboxOptions {
   envWhitelist?: string[];
 }
 
-export function toggleSandbox(name: string, opts: ToggleSandboxOptions): Promise<{ ok: boolean; policy: ServerPolicy }> {
-  return fetch(`/api/sandbox/${encodeURIComponent(name)}`, {
+export async function toggleSandbox(
+  name: string,
+  opts: ToggleSandboxOptions,
+): Promise<{ ok: boolean; policy: ServerPolicy }> {
+  const token = await getToken();
+  const r = await fetch(`/api/sandbox/${encodeURIComponent(name)}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(opts),
-  }).then((r) => jsonOrThrow<{ ok: boolean; policy: ServerPolicy }>(r));
+  });
+  return jsonOrThrow<{ ok: boolean; policy: ServerPolicy }>(r);
 }
