@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wardn — see and stop the risky code your AI agents run</title>
+  <meta name="theme-color" content="#000510" />
+  <meta name="description" content="wardn is a local-first MCP control plane. One command discovers every MCP server your AI clients use, scores it for risk, and sandboxes the dangerous ones." />
+  <meta property="og:title" content="wardn — see and stop the risky code your AI agents run" />
+  <meta property="og:description" content="Local-first MCP control plane. One command: npx wardn scan." />
+  <meta property="og:image" content="https://raw.githubusercontent.com/lynuxis2026-pixel/wardn/main/assets/wardn-attack-demo.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='20' font-size='22' fill='%234db4dc'%3E%E2%9B%A8%3C/text%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #000510;
+      --bg-card: #081826;
+      --bg-card-hover: #0c2235;
+      --border: rgba(77, 180, 220, 0.16);
+      --border-strong: rgba(77, 180, 220, 0.32);
+      --fg: #d6ecf6;
+      --fg-dim: #6f93a8;
+      --fg-faint: #3d5a6e;
+      --cyan: #4db4dc;
+      --cyan-soft: #7fd0ee;
+      --risky: #ff6b8a;
+      --review: #f6c360;
+      --trusted: #7be0a4;
+      --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+      --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background:
+        radial-gradient(ellipse at top, rgba(77, 180, 220, 0.10), transparent 60%),
+        radial-gradient(ellipse at bottom right, rgba(77, 180, 220, 0.04), transparent 50%),
+        var(--bg);
+      color: var(--fg);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { color: var(--cyan-soft); }
+
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 28px 64px; }
+
+    /* nav */
+    .nav { display: flex; align-items: center; justify-content: space-between; padding-bottom: 36px; }
+    .brand { display: flex; align-items: baseline; gap: 14px; }
+    .brand-logo { font-size: 26px; color: var(--cyan); line-height: 1; filter: drop-shadow(0 0 8px rgba(77,180,220,0.4)); }
+    .brand-name { font-family: var(--font-mono); font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+    .brand-sub { font-family: var(--font-mono); font-size: 11px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.18em; }
+    .nav-actions { display: flex; gap: 18px; font-family: var(--font-mono); font-size: 13px; }
+    .nav-actions a { color: var(--fg-dim); }
+    .nav-actions a:hover { color: var(--cyan); }
+
+    /* hero */
+    .hero { text-align: center; padding: 28px 0 44px; }
+    .hero h1 {
+      font-family: var(--font-mono);
+      font-size: clamp(34px, 5vw, 56px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin: 0 0 18px;
+      color: var(--fg);
+    }
+    .hero h1 em { font-style: normal; color: var(--cyan); }
+    .hero p { font-size: 18px; color: var(--fg-dim); max-width: 640px; margin: 0 auto 28px; }
+
+    .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; align-items: center; }
+    .cta {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: var(--font-mono); font-size: 14px;
+      padding: 12px 20px; border-radius: 8px;
+      transition: transform 100ms ease, background 100ms ease, border-color 100ms ease;
+    }
+    .cta-primary {
+      background: var(--cyan); color: #001a26;
+      border: 1px solid var(--cyan);
+      font-weight: 600;
+    }
+    .cta-primary:hover { background: var(--cyan-soft); border-color: var(--cyan-soft); color: #001a26; transform: translateY(-1px); }
+    .cta-secondary {
+      background: transparent; color: var(--fg);
+      border: 1px solid var(--border-strong);
+    }
+    .cta-secondary:hover { background: rgba(77,180,220,0.08); border-color: var(--cyan); color: var(--cyan); }
+
+    .install {
+      display: inline-flex; align-items: center; gap: 12px;
+      margin: 28px auto 0;
+      font-family: var(--font-mono); font-size: 14px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      padding: 12px 18px; border-radius: 8px;
+      color: var(--fg);
+    }
+    .install .prompt { color: var(--cyan); }
+    .install button {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--fg-dim); font-family: var(--font-mono); font-size: 11px;
+      padding: 4px 10px; border-radius: 5px; cursor: pointer;
+      letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .install button:hover { color: var(--cyan); border-color: var(--cyan); }
+    .install button.copied { color: var(--trusted); border-color: var(--trusted); }
+
+    /* demo image */
+    .demo-frame {
+      margin: 56px auto 0;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      overflow: hidden;
+      max-width: 920px;
+    }
+    .demo-frame img { display: block; width: 100%; height: auto; }
+    .demo-cap { text-align: center; color: var(--fg-faint); font-family: var(--font-mono); font-size: 12px; margin-top: 12px; letter-spacing: 0.04em; }
+
+    /* features */
+    .features {
+      margin: 96px 0 0;
+      display: grid; gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+    .feat {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 22px 24px;
+      transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+    }
+    .feat:hover { background: var(--bg-card-hover); border-color: var(--border-strong); transform: translateY(-2px); }
+    .feat-tag {
+      display: inline-block; font-family: var(--font-mono); font-size: 10px;
+      padding: 3px 8px; border-radius: 4px; letter-spacing: 0.16em;
+      background: rgba(77,180,220,0.12); color: var(--cyan);
+      margin-bottom: 14px;
+    }
+    .feat h3 { font-family: var(--font-mono); font-size: 18px; margin: 0 0 8px; font-weight: 600; color: var(--fg); }
+    .feat p { margin: 0; color: var(--fg-dim); font-size: 14px; line-height: 1.55; }
+
+    /* flow */
+    .flow {
+      margin: 96px 0 0;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 32px 28px;
+    }
+    .flow h2 {
+      font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.2em; color: var(--fg-dim); margin: 0 0 22px;
+    }
+    .flow ol { list-style: none; counter-reset: step; padding: 0; margin: 0; }
+    .flow li {
+      counter-increment: step;
+      display: grid; grid-template-columns: 32px 1fr; gap: 16px;
+      padding: 14px 0; border-bottom: 1px dashed var(--border);
+    }
+    .flow li:last-child { border-bottom: 0; }
+    .flow li::before {
+      content: counter(step, decimal-leading-zero);
+      font-family: var(--font-mono); font-size: 12px; color: var(--cyan);
+      align-self: start; padding-top: 1px;
+    }
+    .flow code {
+      font-family: var(--font-mono); font-size: 13px;
+      background: rgba(77,180,220,0.08); color: var(--cyan-soft);
+      padding: 2px 7px; border-radius: 4px;
+    }
+    .flow p { margin: 4px 0 0; color: var(--fg-dim); font-size: 14px; }
+
+    /* footer */
+    .foot {
+      margin: 96px 0 0; padding-top: 28px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      font-family: var(--font-mono); font-size: 12px; color: var(--fg-faint);
+    }
+    .foot a { color: var(--fg-dim); }
+    .foot a:hover { color: var(--cyan); }
+
+    @media (max-width: 640px) {
+      .wrap { padding: 24px 18px 48px; }
+      .nav-actions { display: none; }
+      .install { width: 100%; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <nav class="nav">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">⛨</span>
+        <span class="brand-name">wardn</span>
+        <span class="brand-sub">Local MCP control plane</span>
+      </div>
+      <div class="nav-actions">
+        <a href="https://github.com/lynuxis2026-pixel/wardn">GitHub</a>
+        <a href="https://github.com/lynuxis2026-pixel/wardn#readme">Docs</a>
+        <a href="https://lynuxis.nl">Lynuxis</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <h1>See and stop the <em>risky code</em><br/>your AI agents run.</h1>
+      <p>wardn discovers every MCP server in Claude Desktop, Cursor, and VS Code, scores it for risk, sandboxes the dangerous ones, and watches every JSON-RPC tool-call live. One command. Local. Open source.</p>
+
+      <div class="cta-row">
+        <a class="cta cta-primary" href="https://github.com/lynuxis2026-pixel/wardn">★ Star on GitHub</a>
+        <a class="cta cta-secondary" href="https://github.com/lynuxis2026-pixel/wardn#readme">Read the docs</a>
+      </div>
+
+      <div class="install" role="group" aria-label="install command">
+        <span class="prompt">$</span>
+        <code id="install-cmd">npx wardn scan</code>
+        <button type="button" id="copy-btn" aria-label="copy install command">copy</button>
+      </div>
+
+      <div class="demo-frame">
+        <img src="../assets/wardn-attack-demo.svg" alt="wardn demo blocking four malicious tool-calls in sequence" />
+      </div>
+      <div class="demo-cap">npx wardn demo · four attack vectors blocked before the server sees the call</div>
+    </header>
+
+    <section class="features" aria-label="features">
+      <article class="feat">
+        <span class="feat-tag">SCAN</span>
+        <h3>Explainable trust scores</h3>
+        <p>Every signal carries a human-readable reason: broad filesystem, shell launcher, unpinned package, remote transport, credentials in env. No black box.</p>
+      </article>
+      <article class="feat">
+        <span class="feat-tag">SANDBOX</span>
+        <h3>Policy-first isolation</h3>
+        <p>Per-server filesystem whitelist, network on/off, env-whitelist. Out-of-policy tool-calls are rejected before the MCP server ever sees them. Docker adds container isolation on top when available.</p>
+      </article>
+      <article class="feat">
+        <span class="feat-tag">GATEWAY</span>
+        <h3>Byte-faithful proxy</h3>
+        <p>Sits between any MCP client and any stdio server. Logs every JSON-RPC call with method, id, and duration. Streams live to the dashboard via SSE.</p>
+      </article>
+      <article class="feat">
+        <span class="feat-tag">DASHBOARD</span>
+        <h3>Lynuxis-styled console</h3>
+        <p>Open <code>http://127.0.0.1:7331</code>. Server list with trust badges, signals, sandbox toggle, live tool-call log. Served by the gateway daemon.</p>
+      </article>
+      <article class="feat">
+        <span class="feat-tag">REWRITE</span>
+        <h3>One-command routing</h3>
+        <p>Rewrites Claude Desktop / Cursor / VS Code configs to route every MCP server through wardn. Backed up byte-for-byte. <code>wardn rewrite restore</code> undoes it.</p>
+      </article>
+      <article class="feat">
+        <span class="feat-tag">REGISTRY</span>
+        <h3>Community trust layer</h3>
+        <p>Curated reputation data per MCP package: verified publisher, popularity, known-bad flags. Pull requests welcome — every entry is one short YAML form.</p>
+      </article>
+    </section>
+
+    <section class="flow" aria-label="quickstart">
+      <h2>Quickstart</h2>
+      <ol>
+        <li><div><code>npx wardn scan</code><p>Lists every MCP server in your installed clients and scores each one. Exits non-zero if anything risky is found — drop it into CI.</p></div></li>
+        <li><div><code>npx wardn sandbox enable filesystem --path ~/safe</code><p>Locks the filesystem server to a single directory. Network off by default. Re-scan shows it as <strong>TRUSTED ⛨ sandboxed</strong>.</p></div></li>
+        <li><div><code>npx wardn gateway start</code><p>Starts the local daemon. Dashboard at <code>http://127.0.0.1:7331</code>, SSE log at <code>/api/events</code>.</p></div></li>
+        <li><div><code>npx wardn rewrite apply</code><p>Routes existing client configs through the gateway. Restart the client and every tool-call now flows through wardn.</p></div></li>
+        <li><div><code>npx wardn demo</code><p>Spawns the bundled evil-MCP and proves the sandbox blocks four real-world attack vectors before they reach the server.</p></div></li>
+      </ol>
+    </section>
+
+    <footer class="foot">
+      <div>© Lynuxis · MIT licensed</div>
+      <div>
+        <a href="https://github.com/lynuxis2026-pixel/wardn">github.com/lynuxis2026-pixel/wardn</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    (function () {
+      const btn = document.getElementById('copy-btn');
+      const cmd = document.getElementById('install-cmd');
+      if (!btn || !cmd) return;
+      btn.addEventListener('click', async function () {
+        try {
+          await navigator.clipboard.writeText(cmd.textContent.trim());
+          const original = btn.textContent;
+          btn.textContent = 'copied';
+          btn.classList.add('copied');
+          setTimeout(function () { btn.textContent = original; btn.classList.remove('copied'); }, 1500);
+        } catch (e) {
+          // older browsers: no-op
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

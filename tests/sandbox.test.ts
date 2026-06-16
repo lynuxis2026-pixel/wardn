@@ -139,6 +139,61 @@ test("decideOutgoing skips non-tool methods", () => {
   assert.equal(decision.allow, true);
 });
 
+test("decideOutgoing blocks camelCase dangerous tool names", () => {
+  const policy: ServerPolicy = {
+    name: "fs",
+    enabled: true,
+    filesystem: { paths: ["/safe"] },
+    network: false,
+    envWhitelist: [],
+  };
+  for (const name of ["runQuery", "shellExec", "spawnTask", "evalCode"]) {
+    const decision = decideOutgoing(
+      JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: {} } }),
+      policy,
+    );
+    assert.ok(decision.reject, `${name} should be blocked but was allowed`);
+  }
+});
+
+test("decideOutgoing leaves safe-sounding names alone", () => {
+  const policy: ServerPolicy = {
+    name: "fs",
+    enabled: true,
+    filesystem: { paths: ["/safe"] },
+    network: false,
+    envWhitelist: [],
+  };
+  for (const name of ["read_file", "list_directory", "truncate", "search_documents", "get_status"]) {
+    const decision = decideOutgoing(
+      JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: {} } }),
+      policy,
+    );
+    assert.equal(decision.allow, true, `${name} was unexpectedly blocked`);
+  }
+});
+
+test("decideOutgoing honours policy.allowedTools", () => {
+  const policy: ServerPolicy = {
+    name: "db",
+    enabled: true,
+    filesystem: { paths: [] },
+    network: false,
+    envWhitelist: [],
+    allowedTools: ["run_query"],
+  };
+  const decision = decideOutgoing(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: { name: "run_query", arguments: { sql: "select 1" } },
+    }),
+    policy,
+  );
+  assert.equal(decision.allow, true, "explicit allowedTools entry should bypass the default-deny");
+});
+
 test("scanner downgrades broad-fs when a sandbox restricts it", () => {
   const server = mkServer({
     name: "fs",

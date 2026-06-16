@@ -17,7 +17,9 @@
   "files": [
     "dist",
     "dashboard/dist",
-    "assets"
+    "assets",
+    "examples/evil-mcp",
+    "data"
   ],
   "scripts": {
     "dev": "tsx src/index.ts",
@@ -27,7 +29,8 @@
     "dashboard:dev": "npm --prefix dashboard run dev",
     "prepack": "npm run build && npm run dashboard:build",
     "start": "node dist/index.js",
-    "test": "node --import tsx --test tests/proxy.integration.test.ts tests/sandbox.test.ts tests/gateway-sandbox.integration.test.ts tests/rewrite.test.ts"
+    "test": "node --import tsx --test tests/proxy.integration.test.ts tests/sandbox.test.ts tests/gateway-sandbox.integration.test.ts tests/rewrite.test.ts tests/demo.integration.test.ts tests/trust-registry.test.ts tests/discovery.test.ts tests/daemon.test.ts tests/registry.test.ts",
+    "test:coverage": "c8 --reporter=text --reporter=lcov --include=\"src/**/*.ts\" --exclude=\"src/index.ts\" --exclude=\"src/cli/**\" --check-coverage --lines=80 --functions=80 --branches=70 npm test"
   },
   "engines": {
     "node": ">=18"
@@ -50,6 +53,7 @@
   "devDependencies": {
     "@modelcontextprotocol/server-filesystem": "^2025.3.28",
     "@types/node": "^22.9.0",
+    "c8": "^11.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   }

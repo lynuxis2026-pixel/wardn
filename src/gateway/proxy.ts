@@ -1,5 +1,4 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import path from "node:path";
 import type { Logger, LogEntry } from "./logger.js";
 import { resolveCommand } from "./resolve-command.js";
 
@@ -105,11 +104,6 @@ function pipeLines(
   });
 }
 
-function needsShell(_command: string): boolean {
-  // We no longer need cmd.exe — resolveCommand() finds shims directly.
-  return false;
-}
-
 /**
  * Spawn an MCP server and proxy its stdio. Bytes are forwarded verbatim in
  * both directions so the wire format stays identical; a separate JSON parse
@@ -123,11 +117,12 @@ export function startProxy(cfg: ProxyConfig): ProxyHandle {
     ? { ...(cfg.env ?? {}) }
     : { ...process.env, ...(cfg.env ?? {}) };
 
+  // resolveCommand() finds .cmd/.bat shims on Windows so we never need
+  // shell:true (which would trigger Node 22's DEP0190).
   const child = spawn(resolveCommand(cfg.command), cfg.args, {
     env: spawnEnv,
     cwd: cfg.cwd,
     stdio: ["pipe", "pipe", "pipe"],
-    shell: needsShell(cfg.command),
     windowsHide: true,
   }) as ChildProcessWithoutNullStreams;
 

@@ -4,13 +4,23 @@ import type { LogEntry } from "./types.ts";
 const MAX_ENTRIES = 300;
 
 /**
+ * The raw `LogEntry` doesn't carry a render-stable id — multiple entries can
+ * share the same ts/server. The hook tacks on a monotonically increasing
+ * `__id` at insertion time so React lists can key on it.
+ */
+export interface LiveEntry extends LogEntry {
+  __id: number;
+}
+
+/**
  * Subscribe to the daemon's SSE stream. Returns a rolling buffer of the most
  * recent entries; reconnects automatically with backoff.
  */
-export function useEvents(): { entries: LogEntry[]; connected: boolean } {
-  const [entries, setEntries] = useState<LogEntry[]>([]);
+export function useEvents(): { entries: LiveEntry[]; connected: boolean } {
+  const [entries, setEntries] = useState<LiveEntry[]>([]);
   const [connected, setConnected] = useState(false);
   const reconnectTimer = useRef<number | undefined>(undefined);
+  const counterRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,7 +36,9 @@ export function useEvents(): { entries: LogEntry[]; connected: boolean } {
       };
       es.onmessage = (ev) => {
         try {
-          const entry = JSON.parse(ev.data) as LogEntry;
+          const parsed = JSON.parse(ev.data) as LogEntry;
+          counterRef.current += 1;
+          const entry: LiveEntry = { ...parsed, __id: counterRef.current };
           setEntries((prev) => {
             const next = [...prev, entry];
             return next.length > MAX_ENTRIES ? next.slice(next.length - MAX_ENTRIES) : next;

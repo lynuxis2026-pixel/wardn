@@ -89,6 +89,8 @@ body {
   font-weight: 600;
   color: var(--fg);
   letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 1;
 }
 
 .brand-sub {
@@ -285,8 +287,11 @@ body {
   letter-spacing: 0.04em;
 }
 .btn:hover { background: rgba(77, 180, 220, 0.1); border-color: var(--cyan); color: var(--cyan); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(77, 180, 220, 0.35); border-color: var(--cyan); }
 .btn:disabled { opacity: 0.5; cursor: progress; }
 .btn--on { background: rgba(77, 180, 220, 0.16); border-color: var(--cyan); color: var(--cyan); }
+.btn--on[aria-pressed="true"] { color: var(--cyan); }
+.card-head-id { min-width: 0; flex: 1; }
 
 .signals {
   list-style: none;
@@ -338,11 +343,27 @@ body {
   background: var(--bg-card);
   border: 1px dashed var(--border);
   color: var(--fg-dim);
-  padding: 24px;
+  padding: 32px 28px;
   border-radius: var(--radius);
   text-align: center;
   font-family: var(--font-mono);
   font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.empty-title { color: var(--fg); font-size: 15px; margin: 0; }
+.empty p { margin: 0; }
+.empty-cmd {
+  display: inline-block;
+  background: rgba(77, 180, 220, 0.08);
+  color: var(--cyan-soft);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 /* ---------- live log ---------- */
@@ -357,6 +378,9 @@ body {
   max-height: calc(100vh - 56px);
   display: flex;
   flex-direction: column;
+}
+@media (max-width: 1000px) {
+  .log { position: static; max-height: 60vh; }
 }
 
 .log-list {

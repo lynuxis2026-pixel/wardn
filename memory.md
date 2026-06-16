@@ -57,18 +57,71 @@ Lopend geheugen: beslissingen, status, openstaande punten. Nieuwste bovenaan per
   - CLI: `wardn rewrite apply|restore|status` met `--client`, `--from`, `--invoke`.
   - Tests: apply mutates stdio servers, preserves overige top-level keys, skip op remote; restore
     geeft byte-identieke file terug; tweede apply zonder restore wordt netjes geweigerd.
-- ✅ **Packaging-smoke**: `package.json` neemt `dist` én `dashboard/dist` mee in de npm-tarball en
-  `prepack` bouwt beide. Geverifieerd met `npm pack --dry-run` én install-from-tarball: CLI start
-  en `node_modules/wardn/dashboard/dist/index.html` bestaat.
+- ✅ **Packaging-smoke**: `package.json` neemt `dist`, `dashboard/dist`, `assets`, `data`, en
+  `examples/evil-mcp` mee in de npm-tarball; `prepack` bouwt CLI + dashboard. Geverifieerd met
+  `npm pack --dry-run` én install-from-tarball.
+- ✅ **100%-score-audit** (laatste ronde):
+  - Discovery + daemon HTTP-API + registry zijn nu apart getest (`tests/discovery.test.ts`,
+    `tests/daemon.test.ts` via Fastify `inject()`, `tests/registry.test.ts`). 36 tests groen.
+  - Coverage via `c8`: lines 83.5 / functions 90.36 / branches 74.61 / statements 83.5 — boven alle
+    gates (`--lines=80 --functions=80 --branches=70`). CI gate via `test:coverage` op
+    ubuntu-latest + node 20.
+  - Default-deny voor dangerous tool names tokenize't nu cleanly over snake / kebab / colon /
+    camelCase boundaries — `runQuery` + `shellExec` worden geblokt, `truncate` + `search_documents`
+    laten door. `policy.allowedTools` voor per-tool opt-in (bv. een legitieme `run_query` op een
+    SQL-server).
+  - `wardn gateway start` waarschuwt nu hard wanneer host ≠ loopback — de API heeft geen auth in
+    dit release, dus binden naar `0.0.0.0` is een footgun.
+  - Dashboard a11y + mobile: type=button + `aria-label` + `aria-pressed` op sandbox-knoppen,
+    focus-visible ring (3px cyan glow), `aria-live="polite"` op live-stream + status, role=alert
+    op errors. Mobile (375x812): geen horizontale overflow, log staat static (niet sticky),
+    summary 2 kolommen, brand-name als `<h1>`. LiveLog gebruikt nu monotone `__id` als React key
+    ipv index — geen stale closures meer bij rolling buffer.
+  - Code-review pass: dead `path` import en `needsShell()` stub uit `proxy.ts` weggehaald (shell:false
+    permanent want resolveCommand handelt PATHEXT zelf). `console.log`, `any`, `@ts-ignore`,
+    `TODO/FIXME` zijn nergens te vinden. ESLint niet toegevoegd — geen sloppy stack die het rechtvaardigt.
+  - `CHANGELOG.md` (Keep-a-Changelog) + `docs/ARCHITECTURE.md` (mermaid data-flow diagram, layer-bij-
+    layer beschrijving, threat-model link).
+- ✅ **GitHub-launch readiness** (vorige ronde):
+  - `examples/evil-mcp/` zelfstandige malafide MCP-server + `wardn demo` die 'm onder een tight
+    sandbox door de gateway laat lopen en alle 4 attack vectors (read_secret, exfiltrate, nuke,
+    shell_exec) live geblokt laat zien. Integratietest: `tests/demo.integration.test.ts` controleert
+    dat geen enkele call de evil-mcp bereikt.
+  - Defense-in-depth in `decideOutgoing`: alle string-args worden gescand op URL's bij `network:off`
+    (niet alleen `url`/`uri`-velden), en tool-namen die matchen op `(shell|exec|run|spawn|eval|
+    command|cmd|process|system)` worden default-deny bij actieve policy.
+  - `data/trust.json` curated registry van officiële + community-verified MCP-publishers (Anthropic,
+    Microsoft Playwright, Notion, Upstash, Cloudflare). Nieuwe scanner-regel `ruleTrustRegistry`
+    emit `verified` info-signaal of `known-bad` risky. Dashboard toont 'Verified publisher: …'.
+  - Repo-maturity: `SECURITY.md` met threat-model + responsible disclosure mailbox,
+    `CONTRIBUTING.md` met "high-leverage contributions" gericht op de trust-registry, drie
+    `.github/ISSUE_TEMPLATE/`-forms (bug / feature / trust-registry), PR-template,
+    `.github/workflows/ci.yml` matrix node 18/20/22 × ubuntu/macos/windows (tsc + test + build +
+    dashboard build + pack --dry-run), README-badges (npm, CI, license, node).
+  - `assets/wardn-attack-demo.svg` — pure animated SVG met SMIL (loopt 16s, lijn-per-lijn fade-in)
+    die de demo-output simuleert. Embedt direct in GitHub READMEs.
+  - `landing/index.html` — Lynuxis-styled one-pager voor wardn.dev placeholder: hero, demo-frame,
+    6 feature-cards, quickstart, copy-to-clipboard install, OG-meta voor X/HN-shares. Self-contained
+    HTML + inline CSS, geen deps.
 
 ## Test-state
 
-- `npm test` → 13 tests, allemaal groen:
+- `npm test` → 36 tests, allemaal groen:
   - proxy.integration: `tools/list` door echte filesystem-server, log heeft beide richtingen + duur
   - gateway-sandbox.integration: out-of-policy `tools/call` geblokkeerd vóór de server
   - sandbox (7 unit tests): store, spawn-rewrite, decideOutgoing (path / net / non-tool), scanner
     downgrade, path-normalisatie
   - rewrite (3): apply mutates+backups, restore byte-identiek, double-apply skipped
+  - demo.integration: alle 4 attack-vectors geblokt, geen enkel bereikt evil-mcp
+  - trust-registry (5): lookup-verified, @version-strip, unknown packages, scanner emits
+    `verified` signaal, scanner emits niets voor onbekende packages
+  - discovery (7): claude_desktop / cursor / vscode shapes, broken JSON skip, missing map,
+    non-existent dir, fallback to `servers` key
+  - daemon (4): GET /api/status, GET /api/scan, POST /api/sandbox/:name with body, no-body toggle
+  - registry (3): findServerByName resolve, unknown name, multi-client name conflict
+  - sandbox (extra): camelCase dangerous-tool detection, safe-name no-block, allowedTools override
+- `npm run test:coverage` → lines 83.5% / functions 90.36% / branches 74.61% / statements 83.5%.
+  Allemaal boven de gates (lines/functions ≥80%, branches ≥70%).
 - Extra smokes groen: `npm run build`, `npm run dashboard:build`, daemon API (`/api/status`,
   `/api/scan`, `POST /api/sandbox/filesystem`), rewrite apply/restore op fixturekopieën, en
   install-from-tarball.

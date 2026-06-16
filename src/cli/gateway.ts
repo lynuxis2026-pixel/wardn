@@ -90,10 +90,21 @@ export async function runGateway(name: string, opts: GatewayRunOptions): Promise
   return code;
 }
 
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "::1", "localhost"]);
+
 export async function startGatewayDaemon(opts: GatewayStartOptions): Promise<void> {
   const port = opts.port ?? DEFAULT_PORT;
   const host = opts.host ?? DEFAULT_HOST;
   const logger = new Logger();
+
+  if (!LOOPBACK_HOSTS.has(host)) {
+    process.stderr.write(
+      "\n" +
+        pc.red("⚠  wardn gateway: ") +
+        `you are binding the API to ${pc.bold(host)} — anyone on this network can read /api/scan and toggle sandbox policies via POST /api/sandbox/<name>.\n` +
+        pc.dim("   The daemon has no auth in this release. Bind to 127.0.0.1 (the default) for single-machine use, or front it with a reverse proxy that enforces auth.\n\n"),
+    );
+  }
 
   let daemon: Awaited<ReturnType<typeof startDaemon>>;
   try {

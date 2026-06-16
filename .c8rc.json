@@ -1,0 +1,17 @@
+{
+  "all": true,
+  "src": ["src"],
+  "extension": [".ts"],
+  "exclude": [
+    "tests/**",
+    "dist/**",
+    "dashboard/**",
+    "examples/**",
+    "landing/**",
+    "src/index.ts",
+    "src/cli/**",
+    "src/types.ts",
+    "src/sandbox/types.ts"
+  ],
+  "reporter": ["text", "text-summary", "lcov"]
+}

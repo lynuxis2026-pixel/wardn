@@ -106,6 +106,60 @@ export interface OutgoingDecision {
 
 const PATH_FIELDS = new Set(["path", "source", "destination", "target", "filepath", "file_path", "from", "to"]);
 
+/**
+ * Tokens that almost always grant arbitrary code/command execution. A tool
+ * name containing any of these as a *separate token* (snake / kebab / colon /
+ * camelCase) is default-denied when the policy is active.
+ */
+const DANGEROUS_TOKENS: ReadonlySet<string> = new Set([
+  "shell",
+  "exec",
+  "run",
+  "spawn",
+  "eval",
+  "command",
+  "cmd",
+  "process",
+  "system",
+]);
+
+function tokenizeToolName(name: string): string[] {
+  // First split snake/kebab/colon boundaries…
+  const rough = name.split(/[_\-:]/);
+  // …then split each chunk on lowercase→Uppercase boundaries (camelCase).
+  const out: string[] = [];
+  for (const chunk of rough) {
+    for (const piece of chunk.split(/(?<=[a-z])(?=[A-Z])/)) {
+      out.push(piece.toLowerCase());
+    }
+  }
+  return out;
+}
+
+function looksDangerous(name: string): boolean {
+  for (const tok of tokenizeToolName(name)) {
+    if (DANGEROUS_TOKENS.has(tok)) return true;
+  }
+  return false;
+}
+
+/** Strings that look like a URL anywhere in a tool's arguments. */
+const URL_RE = /\b(?:https?|wss?|ftp):\/\/[^\s"'<>]+/i;
+
+function collectStrings(value: unknown, out: string[]): void {
+  if (typeof value === "string") {
+    out.push(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const v of value) collectStrings(v, out);
+    return;
+  }
+  if (value && typeof value === "object") {
+    for (const v of Object.values(value as Record<string, unknown>)) collectStrings(v, out);
+  }
+}
+
 function collectPaths(value: unknown, out: string[]): void {
   if (typeof value === "string") {
     if (path.isAbsolute(value) || /^[A-Za-z]:[\\/]/.test(value) || value.startsWith("file://")) {
@@ -169,24 +223,48 @@ export function decideOutgoing(line: string, policy: ServerPolicy): OutgoingDeci
   if (msg.method !== "tools/call") return { allow: true };
   if (!msg.params || typeof msg.params !== "object") return { allow: true };
   const params = msg.params as { name?: string; arguments?: unknown };
-  const found: string[] = [];
-  collectPaths(params.arguments, found);
 
-  // Network gating for fetch-style tools: any url/uri param outside allowed scope.
-  if (!policy.network && params.arguments && typeof params.arguments === "object") {
-    for (const [k, v] of Object.entries(params.arguments as Record<string, unknown>)) {
-      if (typeof v === "string" && /^(https?|wss?|ftp):/i.test(v) && (k.toLowerCase() === "url" || k.toLowerCase() === "uri")) {
+  // Default-deny tools whose name advertises arbitrary execution. A sandboxed
+  // server has no reason to expose shell_exec / run / spawn — if it does, we
+  // refuse before looking at the arguments. Devs can opt in per-tool via
+  // policy.allowedTools.
+  if (typeof params.name === "string" && looksDangerous(params.name)) {
+    const allowed = policy.allowedTools?.includes(params.name);
+    if (!allowed) {
+      return {
+        reject: {
+          response: errorResponse(
+            msg.id ?? null,
+            `wardn: tool "${params.name}" matches a dangerous-tool pattern and is blocked by the sandbox policy for "${policy.name}". Add it to policy.allowedTools to override.`,
+          ),
+        },
+      };
+    }
+  }
+
+  // Network gating: when network is off, refuse any tool-call whose arguments
+  // (anywhere in the structure) contain a URL. Real attackers won't always
+  // put it in a field called "url".
+  if (!policy.network) {
+    const strings: string[] = [];
+    collectStrings(params.arguments, strings);
+    for (const s of strings) {
+      const m = s.match(URL_RE);
+      if (m) {
         return {
           reject: {
             response: errorResponse(
               msg.id ?? null,
-              `wardn: network is disabled for "${policy.name}" — blocked tool-call to ${v}`,
+              `wardn: network is disabled for "${policy.name}" — blocked tool-call referencing ${m[0]}`,
             ),
           },
         };
       }
     }
   }
+
+  const found: string[] = [];
+  collectPaths(params.arguments, found);
 
   for (const p of found) {
     if (!pathInsideAny(p, policy.filesystem.paths)) {

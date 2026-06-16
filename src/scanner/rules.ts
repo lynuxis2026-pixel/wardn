@@ -1,6 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 import type { McpServer, Signal } from "../types.js";
+import { lookupPackage } from "./trust-registry.js";
 
 const KNOWN_LAUNCHERS = new Set([
   "npx",
@@ -117,6 +118,27 @@ const ruleOfficial: Rule = (s) => {
   return null;
 };
 
+const ruleTrustRegistry: Rule = (s) => {
+  const pkg = packageArg(s);
+  if (!pkg) return null;
+  const lookup = lookupPackage(pkg);
+  if (lookup.entry?.knownBad) {
+    return {
+      id: "known-bad",
+      severity: "risky",
+      reason: `Flagged as known-bad in wardn's trust registry${lookup.entry.notes ? `: ${lookup.entry.notes}` : ""}`,
+    };
+  }
+  if (lookup.entry?.verified && lookup.publisher) {
+    return {
+      id: "verified",
+      severity: "info",
+      reason: `Verified publisher: ${lookup.publisher.label}`,
+    };
+  }
+  return null;
+};
+
 export const RULES: Rule[] = [
   ruleBroadFilesystem,
   ruleShellExec,
@@ -125,5 +147,6 @@ export const RULES: Rule[] = [
   ruleUnofficialSource,
   ruleRemoteTransport,
   ruleSecretsInEnv,
+  ruleTrustRegistry,
   ruleOfficial,
 ];

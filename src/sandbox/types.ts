@@ -27,6 +27,11 @@ export interface ServerPolicy {
   network: boolean;
   /** Env vars allowed to pass through to the server. Anything else is stripped. */
   envWhitelist: string[];
+  /**
+   * Tool names the dev has explicitly approved despite their name. Bypasses
+   * the dangerous-tool default-deny only; arguments are still vetted.
+   */
+  allowedTools?: string[];
   /** Free-form note shown in the scanner output. */
   note?: string;
 }

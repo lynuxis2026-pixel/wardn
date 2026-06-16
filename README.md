@@ -2,13 +2,18 @@
 
 **See and stop the risky code your AI agents run.**
 
+[![npm version](https://img.shields.io/npm/v/wardn.svg?color=4db4dc&labelColor=000510)](https://www.npmjs.com/package/wardn)
+[![CI](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml/badge.svg)](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-4db4dc.svg?labelColor=000510)](LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A518-4db4dc.svg?labelColor=000510)](package.json)
+
 `wardn` is a local-first MCP control plane for developers using Claude Desktop, Cursor, VS Code,
 Codex, or custom agents. One command discovers your MCP servers, explains their risk, routes calls
 through a local gateway, and lets you sandbox the dangerous ones.
 
 > A [Lynuxis](https://lynuxis.nl) project.
 
-![wardn dashboard preview](assets/wardn-dashboard.svg)
+![wardn demo — evil-mcp blocked four times](assets/wardn-attack-demo.svg)
 
 ## Why wardn exists
 
@@ -60,6 +65,31 @@ Open:
 http://127.0.0.1:7331/
 ```
 
+Want a proof? `wardn demo` spawns a deliberately malicious MCP server (in `examples/evil-mcp/`)
+behind the gateway under a tight sandbox, fires four real-world attack vectors, and shows you
+every one of them blocked before the server ever sees the call:
+
+```bash
+npx wardn demo
+```
+
+```text
+→ attacker calls read_secret (read ~/.ssh/id_rsa)
+  ✕ BLOCKED  path "…/.ssh/id_rsa" is outside the sandbox policy for "evil-mcp"
+
+→ attacker calls exfiltrate (POST stolen data to evil.example)
+  ✕ BLOCKED  network is disabled — blocked tool-call referencing https://evil.example/drop
+
+→ attacker calls nuke (rm -rf the user's home directory)
+  ✕ BLOCKED  path "/Users/you" is outside the sandbox policy for "evil-mcp"
+
+→ attacker calls shell_exec (shell out: curl | sh)
+  ✕ BLOCKED  tool "shell_exec" matches a dangerous-tool pattern
+
+✓ 4/4 attempts blocked
+  Without wardn, every call above would have run on your machine.
+```
+
 Finally, route existing clients through wardn:
 
 ```bash
@@ -103,7 +133,18 @@ wardn gateway start          [--port <n>] [--host <h>] [--from <dir>]
 wardn rewrite apply          [--client <c>] [--invoke <tpl>] [--from <dir>]
 wardn rewrite restore        [--client <c>] [--from <dir>]
 wardn rewrite status
+wardn demo                   [--fast]
 ```
+
+## Trust registry
+
+wardn ships a curated [`data/trust.json`](data/trust.json) that maps known MCP packages
+to a verified publisher. The scanner uses it on top of the heuristics so an official server
+shows a `Verified publisher: Anthropic` info signal, and a `knownBad: true` entry is
+treated as `RISKY` regardless of how innocent the config looks.
+
+Spot a server we should add — or one we should flag? Open a
+[Trust registry entry](.github/ISSUE_TEMPLATE/trust-registry.yml) and we'll review it.
 
 ## How sandboxing works
 
@@ -147,13 +188,20 @@ Validation currently covers:
 
 Requires Node 18 or newer. TypeScript, ESM, and NodeNext imports with `.js` extensions.
 
+## Contributing
+
+The highest-leverage PR is adding entries to the [trust registry](data/trust.json) —
+see [CONTRIBUTING.md](CONTRIBUTING.md). New scanner signals, sandbox enforcement gaps,
+and additional MCP-capable clients are also very welcome. Security issues go to
+[SECURITY.md](SECURITY.md), not the public tracker.
+
 ## Roadmap
 
 The local MVP is complete. Next layers:
 
 - hosted/team policies
 - registry and marketplace signals
-- richer Linux-native isolation
+- richer Linux-native isolation (bubblewrap / landlock)
 - team audit trails
 - model/router integrations
 

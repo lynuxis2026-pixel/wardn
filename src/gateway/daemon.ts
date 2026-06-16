@@ -151,9 +151,13 @@ export async function startDaemon(opts: DaemonOptions): Promise<DaemonHandle> {
     const existing = store.get(req.params.name);
     const base: ServerPolicy = existing ?? defaultPolicyFor(req.params.name);
     const body = req.body ?? {};
+    // Toggle semantics: if `enabled` is explicit in the body, use it. Otherwise
+    // enable on first creation; toggle the existing flag on subsequent calls.
+    const nextEnabled =
+      typeof body.enabled === "boolean" ? body.enabled : existing ? !existing.enabled : true;
     const policy: ServerPolicy = {
       ...base,
-      enabled: typeof body.enabled === "boolean" ? body.enabled : !base.enabled,
+      enabled: nextEnabled,
       filesystem: { paths: Array.isArray(body.paths) ? body.paths.map((p) => path.resolve(p)) : base.filesystem.paths },
       network: typeof body.network === "boolean" ? body.network : base.network,
       envWhitelist: Array.isArray(body.envWhitelist) ? body.envWhitelist : base.envWhitelist,

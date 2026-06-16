@@ -18,11 +18,16 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleTimeString();
 }
 
-export function App(): JSX.Element {
+function rank(level: ScanResult["level"]): number {
+  return level === "risky" ? 0 : level === "review" ? 1 : 2;
+}
+
+export function App() {
   const [scan, setScan] = useState<ScanPayload | undefined>(undefined);
   const [status, setStatus] = useState<StatusPayload | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
+  const [loaded, setLoaded] = useState(false);
   const { entries, connected } = useEvents();
 
   const refresh = useCallback(async () => {
@@ -33,6 +38,8 @@ export function App(): JSX.Element {
       setError(undefined);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoaded(true);
     }
   }, []);
 
@@ -58,38 +65,39 @@ export function App(): JSX.Element {
   );
 
   const ranked = scan
-    ? [...scan.results].sort((a, b) => {
-        const rank = (l: ScanResult["level"]): number => (l === "risky" ? 0 : l === "review" ? 1 : 2);
-        return rank(a.level) - rank(b.level) || a.server.name.localeCompare(b.server.name);
-      })
+    ? [...scan.results].sort((a, b) => rank(a.level) - rank(b.level) || a.server.name.localeCompare(b.server.name))
     : [];
 
   return (
     <div className="app">
       <header className="header">
         <div className="brand">
-          <span className="logo">⛨</span>
-          <span className="brand-name">wardn</span>
+          <span className="logo" aria-hidden="true">⛨</span>
+          <h1 className="brand-name">wardn</h1>
           <span className="brand-sub">local mcp control plane</span>
         </div>
-        <div className="status">
-          <span className={connected ? "dot dot--live" : "dot dot--off"} />
+        <div className="status" aria-live="polite">
+          <span className={connected ? "dot dot--live" : "dot dot--off"} aria-hidden="true" />
           <span>{connected ? "live" : "reconnecting"}</span>
           {status && (
             <>
-              <span className="sep">·</span>
+              <span className="sep" aria-hidden="true">·</span>
               <span>docker {status.docker ? "✓" : "—"}</span>
-              <span className="sep">·</span>
+              <span className="sep" aria-hidden="true">·</span>
               <span>uptime {status.uptimeSec}s</span>
             </>
           )}
         </div>
       </header>
 
-      {error && <div className="error">{error}</div>}
+      {error && (
+        <div className="error" role="alert">
+          {error}
+        </div>
+      )}
 
       {scan && (
-        <section className="summary">
+        <section className="summary" aria-label="trust summary">
           <SummaryStat label="servers" value={scan.summary.total} />
           <SummaryStat label="risky" value={scan.summary.risky} tone={scan.summary.risky > 0 ? "risky" : "muted"} />
           <SummaryStat label="review" value={scan.summary.review} tone={scan.summary.review > 0 ? "review" : "muted"} />
@@ -98,33 +106,45 @@ export function App(): JSX.Element {
       )}
 
       <main className="grid">
-        <section className="servers">
+        <section className="servers" aria-label="discovered MCP servers">
           <h2 className="section-title">servers</h2>
+
           {ranked.map((r) => {
             const policy = scan?.policies[r.server.name];
             const sandboxed = !!policy?.enabled;
+            const cardKey = `${r.server.name}@${r.server.client}`;
+            const btnLabel = busy[r.server.name]
+              ? "applying"
+              : sandboxed
+              ? `Disable sandbox for ${r.server.name}`
+              : `Sandbox ${r.server.name}`;
             return (
-              <article key={r.server.name + r.server.client} className={`card card--${r.level}`}>
+              <article key={cardKey} className={`card card--${r.level}`}>
                 <header className="card-head">
-                  <div>
+                  <div className="card-head-id">
                     <span className={`badge badge--${r.level}`}>{BADGE_LABEL[r.level]}</span>
                     <h3 className="card-title">{r.server.name}</h3>
                     <span className="card-sub">{r.server.client}</span>
                   </div>
                   <button
+                    type="button"
                     className={sandboxed ? "btn btn--on" : "btn"}
                     onClick={() => onToggleSandbox(r.server.name, sandboxed)}
                     disabled={!!busy[r.server.name]}
+                    aria-label={btnLabel}
+                    aria-pressed={sandboxed}
                   >
                     {busy[r.server.name] ? "…" : sandboxed ? "sandboxed ⛨" : "sandbox"}
                   </button>
                 </header>
 
                 <ul className="signals">
-                  {r.signals.length === 0 && <li className="signal signal--muted">no signals — looks clean</li>}
+                  {r.signals.length === 0 && (
+                    <li className="signal signal--muted">no signals — looks clean</li>
+                  )}
                   {r.signals.map((s) => (
                     <li key={s.id} className={`signal signal--${s.severity}`}>
-                      <span className="signal-dot">●</span>
+                      <span className="signal-dot" aria-hidden="true">●</span>
                       <span>{s.reason}</span>
                     </li>
                   ))}
@@ -145,22 +165,34 @@ export function App(): JSX.Element {
               </article>
             );
           })}
-          {ranked.length === 0 && !error && <div className="empty">no MCP servers discovered yet…</div>}
+
+          {loaded && ranked.length === 0 && !error && (
+            <div className="empty">
+              <p className="empty-title">no MCP servers found</p>
+              <p>Start the daemon against the bundled fixtures to see what wardn does:</p>
+              <code className="empty-cmd">npx wardn gateway start --from fixtures</code>
+            </div>
+          )}
         </section>
 
-        <section className="log">
+        <section className="log" aria-label="live tool-call log">
           <h2 className="section-title">live tool-calls</h2>
-          <ol className="log-list">
+          <ol className="log-list" aria-live="polite">
             {entries.length === 0 && <li className="log-empty">waiting for events…</li>}
             {entries
               .slice()
               .reverse()
-              .map((e, i) => (
-                <li key={i} className={`log-row log-row--${e.direction}${e.isError ? " log-row--err" : ""}`}>
+              .map((e) => (
+                <li
+                  key={e.__id}
+                  className={`log-row log-row--${e.direction}${e.isError ? " log-row--err" : ""}`}
+                >
                   <span className="log-ts">{relativeTime(e.ts)}</span>
                   <span className={`log-dir log-dir--${e.direction}`}>{e.direction}</span>
                   <span className="log-server">{e.server}</span>
-                  <span className="log-method">{e.method ?? (e.message ?? (e.isResponse ? "(response)" : "—"))}</span>
+                  <span className="log-method">
+                    {e.method ?? e.message ?? (e.isResponse ? "(response)" : "—")}
+                  </span>
                   {typeof e.durationMs === "number" && <span className="log-dur">{e.durationMs}ms</span>}
                 </li>
               ))}
@@ -171,13 +203,13 @@ export function App(): JSX.Element {
   );
 }
 
-interface SummaryStatProps {
+type SummaryStatProps = {
   label: string;
   value: number;
   tone?: "risky" | "review" | "trusted" | "muted";
-}
+};
 
-function SummaryStat({ label, value, tone }: SummaryStatProps): JSX.Element {
+function SummaryStat({ label, value, tone }: SummaryStatProps) {
   return (
     <div className={`stat stat--${tone ?? "default"}`}>
       <div className="stat-value">{value}</div>

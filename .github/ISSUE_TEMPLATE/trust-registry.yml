@@ -1,0 +1,45 @@
+name: Trust registry entry
+description: Propose adding (or correcting) an MCP server in data/trust.json.
+labels: [trust-registry, triage]
+body:
+  - type: input
+    id: package
+    attributes:
+      label: npm package name
+      placeholder: "@example/server-something"
+    validations:
+      required: true
+  - type: input
+    id: publisher
+    attributes:
+      label: Publisher (org / company / person)
+    validations:
+      required: true
+  - type: dropdown
+    id: popularity
+    attributes:
+      label: Popularity
+      options:
+        - high
+        - medium
+        - low
+        - unknown
+  - type: checkboxes
+    id: signals
+    attributes:
+      label: What you can vouch for
+      options:
+        - label: Source is open and matches the published package
+        - label: Maintainer is responsive (PRs / issues handled)
+        - label: Publisher is an established org with other shipped software
+        - label: I have run this locally and inspected its tool surface
+  - type: textarea
+    id: notes
+    attributes:
+      label: One-line note for the registry
+      placeholder: "Headless browser — has network and renders arbitrary pages."
+  - type: textarea
+    id: bad
+    attributes:
+      label: If proposing `knownBad: true`, attach evidence
+      description: Link to the malicious behaviour, supply-chain incident, or unmaintained advisory.

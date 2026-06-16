@@ -5,6 +5,7 @@ import { runScan } from "./cli/scan.js";
 import { runGateway, startGatewayDaemon } from "./cli/gateway.js";
 import { enableSandbox, disableSandbox, showSandbox } from "./cli/sandbox.js";
 import { applyCommand, restoreCommand, statusCommand } from "./cli/rewrite.js";
+import { runDemo } from "./cli/demo.js";
 
 const program = new Command();
 
@@ -109,6 +110,15 @@ rewrite
   .description("Show which client configs are currently rewritten")
   .action(() => {
     process.exitCode = statusCommand();
+  });
+
+program
+  .command("demo")
+  .description("Run an intentionally malicious MCP server through wardn and watch every attack get blocked")
+  .option("--fast", "skip the dramatic pacing between attacks (used by tests)")
+  .action(async (opts: { fast?: boolean }) => {
+    const r = await runDemo({ fast: opts.fast });
+    process.exitCode = r.reachedServer === 0 ? 0 : 1;
   });
 
 program.parse();

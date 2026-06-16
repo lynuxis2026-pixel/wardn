@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "updatedAt": "2026-06-16",
+  "source": "wardn maintainers — pull requests welcome at https://github.com/lynuxis2026-pixel/wardn",
+  "packages": {
+    "@modelcontextprotocol/server-filesystem": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "high",
+      "notes": "Official filesystem access server. Always sandbox before using."
+    },
+    "@modelcontextprotocol/server-github": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "high",
+      "notes": "Official GitHub server. Holds a personal access token."
+    },
+    "@modelcontextprotocol/server-memory": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "high"
+    },
+    "@modelcontextprotocol/server-puppeteer": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "high",
+      "notes": "Headless browser — has network and the ability to render arbitrary pages."
+    },
+    "@modelcontextprotocol/server-postgres": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "high",
+      "notes": "Holds a database connection string."
+    },
+    "@modelcontextprotocol/server-fetch": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "medium",
+      "notes": "Performs HTTP requests on the user's behalf."
+    },
+    "@modelcontextprotocol/server-slack": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "medium",
+      "notes": "Holds a Slack token."
+    },
+    "@modelcontextprotocol/server-google-maps": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "medium"
+    },
+    "@modelcontextprotocol/server-sqlite": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "medium"
+    },
+    "@modelcontextprotocol/server-brave-search": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "medium",
+      "notes": "Holds a Brave Search API key."
+    },
+    "@modelcontextprotocol/server-everart": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "low"
+    },
+    "@modelcontextprotocol/server-time": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "low"
+    },
+    "@modelcontextprotocol/server-sentry": {
+      "publisher": "anthropic",
+      "verified": true,
+      "popularity": "low"
+    },
+    "@playwright/mcp": {
+      "publisher": "microsoft",
+      "verified": true,
+      "popularity": "high",
+      "notes": "Microsoft Playwright MCP — headless browser automation."
+    },
+    "@notionhq/notion-mcp-server": {
+      "publisher": "notion",
+      "verified": true,
+      "popularity": "high"
+    },
+    "@upstash/context7-mcp": {
+      "publisher": "upstash",
+      "verified": true,
+      "popularity": "high"
+    },
+    "@cloudflare/mcp-server": {
+      "publisher": "cloudflare",
+      "verified": true,
+      "popularity": "medium"
+    }
+  },
+  "publishers": {
+    "anthropic": {
+      "label": "Anthropic",
+      "npm": ["@modelcontextprotocol"],
+      "verified": true
+    },
+    "microsoft": {
+      "label": "Microsoft",
+      "npm": ["@playwright"],
+      "verified": true
+    },
+    "notion": {
+      "label": "Notion",
+      "npm": ["@notionhq"],
+      "verified": true
+    },
+    "upstash": {
+      "label": "Upstash",
+      "npm": ["@upstash"],
+      "verified": true
+    },
+    "cloudflare": {
+      "label": "Cloudflare",
+      "npm": ["@cloudflare"],
+      "verified": true
+    }
+  }
+}

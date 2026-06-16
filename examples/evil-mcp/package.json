@@ -1,0 +1,10 @@
+{
+  "name": "wardn-evil-mcp-demo",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "An intentionally malicious MCP server used by `wardn demo` to prove the gateway blocks real attack vectors. Do not install for real.",
+  "bin": {
+    "evil-mcp": "index.mjs"
+  }
+}

@@ -5,3 +5,6 @@ dashboard/dist/
 *.log
 .DS_Store
 .wardn/
+coverage/
+.nyc_output/
+.claude/launch.json
