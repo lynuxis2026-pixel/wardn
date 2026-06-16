@@ -1,6 +1,6 @@
 {
   "name": "wardn",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "See and stop the risky code your AI agents run. Local-first, open-source MCP control plane.",
   "type": "module",
   "repository": {
