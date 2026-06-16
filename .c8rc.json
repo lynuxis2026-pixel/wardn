@@ -1,7 +1,6 @@
 {
   "all": true,
-  "src": ["src"],
-  "extension": [".ts"],
+  "include": ["src/**/*.ts"],
   "exclude": [
     "tests/**",
     "dist/**",

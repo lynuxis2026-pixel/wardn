@@ -38,6 +38,15 @@ the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The daemon's mutating endpoints (`POST /api/sandbox/:name`, future write routes) now require
   an authorization header. Previously the warning at startup was the only protection. Read
   endpoints stay open so the dashboard works without the round-trip.
+- **`decideOutgoing` now recurses into nested objects** when looking for path arguments. Before
+  this change a tool-call shaped like `{config: {filepath: "..."}}` would slip past the policy
+  because `config` was not in the path-fields set. The recursion is gated by the
+  `inPathContext` flag so freeform text under non-path keys still doesn't trip false positives.
+
+### Tests
+- Test suite grew from 36 → 97 specs across 18 files.
+- New coverage gate: lines / functions ≥ 95%, branches ≥ 85% (previously 80% / 70%).
+  Current: 95.33 / 85.28 / 98.98 / 95.33 — all above the gates.
 
 ## [0.1.0] — first launch
 ### Added

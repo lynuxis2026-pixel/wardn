@@ -89,3 +89,8 @@ export function bubblewrapSpawn(rewrite: SpawnRewrite, policy: ServerPolicy): Sp
 export function _resetBubblewrapCacheForTests(): void {
   cachedAvailability = undefined;
 }
+
+/** Test hook — pretend bubblewrap is or isn't available without probing. */
+export function _setBubblewrapAvailableForTests(available: boolean | undefined): void {
+  cachedAvailability = available;
+}

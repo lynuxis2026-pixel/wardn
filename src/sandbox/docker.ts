@@ -25,6 +25,11 @@ export function isDockerAvailable(): boolean {
   return cachedAvailability;
 }
 
+/** Test hook — pretend Docker is or isn't available without probing. */
+export function _setDockerAvailableForTests(available: boolean | undefined): void {
+  cachedAvailability = available;
+}
+
 export interface DockerizeOptions {
   policy: ServerPolicy;
   /** Image to run inside. Falls back to node:20-alpine for npm-based servers. */

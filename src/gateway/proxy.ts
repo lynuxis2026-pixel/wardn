@@ -187,15 +187,23 @@ export function startProxy(cfg: ProxyConfig): ProxyHandle {
     process.stderr.write(chunk);
   });
 
-  child.on("error", (err) => {
-    cfg.logger.append({
-      ...baseEntry("system"),
-      message: `spawn error: ${err instanceof Error ? err.message : String(err)}`,
-    });
-  });
-
   const exit = new Promise<number>((resolve) => {
-    child.on("exit", (code) => resolve(code ?? 0));
+    let done = false;
+    const finish = (code: number): void => {
+      if (done) return;
+      done = true;
+      resolve(code);
+    };
+    child.on("exit", (code) => finish(code ?? 0));
+    // When spawn itself fails (ENOENT, EACCES, etc.) Node fires `error` but
+    // NOT `exit` — we need to drain the promise either way.
+    child.on("error", (err) => {
+      cfg.logger.append({
+        ...baseEntry("system"),
+        message: `spawn error: ${err instanceof Error ? err.message : String(err)}`,
+      });
+      finish(127);
+    });
   });
 
   return { child, exit };

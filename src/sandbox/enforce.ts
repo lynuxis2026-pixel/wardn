@@ -160,8 +160,9 @@ function collectStrings(value: unknown, out: string[]): void {
   }
 }
 
-function collectPaths(value: unknown, out: string[]): void {
+function collectPathsRecursive(value: unknown, out: string[], inPathContext: boolean): void {
   if (typeof value === "string") {
+    if (!inPathContext) return;
     if (path.isAbsolute(value) || /^[A-Za-z]:[\\/]/.test(value) || value.startsWith("file://")) {
       const cleaned = value.startsWith("file://")
         ? decodeURIComponent(value.slice("file://".length).replace(/^\/+([A-Za-z]:)/, "$1"))
@@ -171,15 +172,23 @@ function collectPaths(value: unknown, out: string[]): void {
     return;
   }
   if (Array.isArray(value)) {
-    for (const v of value) collectPaths(v, out);
+    for (const v of value) collectPathsRecursive(v, out, inPathContext);
     return;
   }
   if (value && typeof value === "object") {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (PATH_FIELDS.has(k.toLowerCase())) collectPaths(v, out);
-      else if (k.toLowerCase() === "paths" || k.toLowerCase() === "uris") collectPaths(v, out);
+      const lc = k.toLowerCase();
+      const isPathKey = PATH_FIELDS.has(lc) || lc === "paths" || lc === "uris";
+      // Always recurse: a path-named field can live arbitrarily deep. We only
+      // *collect* string values that sit under a path-named key, so freeform
+      // text in `description`/`message`/etc. doesn't accidentally trigger.
+      collectPathsRecursive(v, out, inPathContext || isPathKey);
     }
   }
+}
+
+function collectPaths(value: unknown, out: string[]): void {
+  collectPathsRecursive(value, out, false);
 }
 
 function normalizeForCompare(p: string): string {

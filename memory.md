@@ -123,7 +123,7 @@ Lopend geheugen: beslissingen, status, openstaande punten. Nieuwste bovenaan per
 
 ## Test-state
 
-- `npm test` → 59 tests, allemaal groen:
+- `npm test` → 97 tests, allemaal groen:
   - proxy.integration: `tools/list` door echte filesystem-server, log heeft beide richtingen + duur
   - gateway-sandbox.integration: out-of-policy `tools/call` geblokkeerd vóór de server
   - sandbox (7 unit tests): store, spawn-rewrite, decideOutgoing (path / net / non-tool), scanner
@@ -137,8 +137,8 @@ Lopend geheugen: beslissingen, status, openstaande punten. Nieuwste bovenaan per
   - daemon (4): GET /api/status, GET /api/scan, POST /api/sandbox/:name with body, no-body toggle
   - registry (3): findServerByName resolve, unknown name, multi-client name conflict
   - sandbox (extra): camelCase dangerous-tool detection, safe-name no-block, allowedTools override
-- `npm run test:coverage` → lines 85.3% / functions 94.84% / branches 75.28% / statements 85.3%.
-  Allemaal boven de gates (lines/functions ≥80%, branches ≥70%).
+- `npm run test:coverage` → lines 95.33% / functions 98.98% / branches 85.28% / statements 95.33%.
+  Allemaal boven de nieuwe gates (lines/functions ≥95%, branches ≥85%).
 - Extra suites toegevoegd in deze ronde:
   - bubblewrap (3 tests, includes Linux-only smoke skip op andere platforms)
   - doctor (2 tests, dashboard pass/fail paden)
@@ -148,6 +148,15 @@ Lopend geheugen: beslissingen, status, openstaande punten. Nieuwste bovenaan per
   - daemon auth (4 extra tests: 401 zonder token, 401 met foute token, /api/token over loopback,
     /api/token 403 voor non-loopback)
   - rewrite dry-run (geen mutatie, geen backup, geen index entry).
+- Coverage-loop ronde toegevoegd: tests/edge-cases, tests/branch-coverage, tests/proxy-edge,
+  tests/docker. Plus daemon dashboard placeholder + SSE headers + per-IP token endpoint.
+- **Echte bug gevonden tijdens loop**: `decideOutgoing.collectPaths` daalde niet af in geneste
+  objecten waarvan de outer key geen path-naam had. `{config: {filepath: "/etc/shadow"}}` werd
+  niet geblokt. Vervangen door recursieve walker met `inPathContext`-flag — recurse altijd,
+  collect alleen strings onder path-named keys. Test toegevoegd.
+- **Resilience bug gevonden**: bij spawn-failure (ENOENT) firede Node alleen 'error', niet
+  'exit', dus `handle.exit` resolved nooit. `startProxy` resolved nu in beide gevallen (code 127
+  bij spawn-error). Test bewijst dat een "spawn error" system entry geschreven wordt.
 - Extra smokes groen: `npm run build`, `npm run dashboard:build`, daemon API (`/api/status`,
   `/api/scan`, `POST /api/sandbox/filesystem`), rewrite apply/restore op fixturekopieën, en
   install-from-tarball.

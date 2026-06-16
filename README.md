@@ -10,7 +10,7 @@ tool-call through a local gateway, and lets you sandbox the dangerous ones.
 
 [![npm version](https://img.shields.io/npm/v/wardn.svg?color=4db4dc&labelColor=000510)](https://www.npmjs.com/package/wardn)
 [![CI](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml/badge.svg)](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-85%25-7be0a4.svg?labelColor=000510)](#tested)
+[![coverage](https://img.shields.io/badge/coverage-95%25-7be0a4.svg?labelColor=000510)](#tested)
 [![license](https://img.shields.io/badge/license-MIT-4db4dc.svg?labelColor=000510)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A518-4db4dc.svg?labelColor=000510)](package.json)
 
@@ -278,17 +278,17 @@ cleanly into CI.
 ```text
 $ npm run test:coverage
 
-ℹ tests 59
-ℹ pass 59
+ℹ tests 97
+ℹ pass 97
 ℹ fail 0
 
 File                 | % Stmts | % Branch | % Funcs | % Lines |
 ---------------------|---------|----------|---------|---------|
-All files            |    85.3 |    75.28 |   94.84 |    85.3 |
+All files            |   95.33 |    85.28 |   98.98 |   95.33 |
 ```
 
 CI matrix runs on Node 18 / 20 / 22 across Ubuntu, macOS, and Windows; the Ubuntu-Node-20 leg gates
-coverage at lines/functions ≥ 80% and branches ≥ 70%.
+coverage at lines/functions ≥ 95% and branches ≥ 85%.
 
 Validation covers:
 

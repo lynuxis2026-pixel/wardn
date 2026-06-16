@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { bubblewrapSpawn, isBubblewrapAvailable, _resetBubblewrapCacheForTests } from "../src/sandbox/bubblewrap.js";
+import {
+  bubblewrapSpawn,
+  isBubblewrapAvailable,
+  _resetBubblewrapCacheForTests,
+  _setBubblewrapAvailableForTests,
+} from "../src/sandbox/bubblewrap.js";
 import type { ServerPolicy } from "../src/sandbox/types.js";
 import type { SpawnRewrite } from "../src/sandbox/enforce.js";
 
@@ -41,25 +46,46 @@ test("bubblewrapSpawn is a no-op when bwrap is unavailable", () => {
   }
 });
 
-test("bubblewrap arg layout includes namespace flags and binds (linux smoke)", () => {
-  // We can't reliably probe bwrap on every CI box, but we CAN inspect the
-  // assembled arg list when we force-call the helper. Skip on non-linux to
-  // avoid asserting about a platform we can't test on.
-  if (process.platform !== "linux") return;
-  _resetBubblewrapCacheForTests();
-  if (!isBubblewrapAvailable()) return;
-  const policy: ServerPolicy = {
-    name: "test",
-    enabled: true,
-    filesystem: { paths: ["/safe"] },
-    network: false,
-    envWhitelist: [],
-  };
-  const out = bubblewrapSpawn(baseRewrite, policy);
-  assert.equal(out.command, "bwrap");
-  assert.ok(out.args.includes("--unshare-net"), "should drop network namespace");
-  assert.ok(out.args.includes("--bind"), "should bind the policy path");
-  assert.ok(out.args.includes(path.resolve("/safe")));
-  assert.ok(out.args.includes("--"), "must delimit bwrap args from the inner command");
-  assert.ok(out.changes.some((c) => /bubblewrap-isolated/.test(c)));
+test("bubblewrap arg layout includes namespace flags and binds (forced available)", () => {
+  _setBubblewrapAvailableForTests(true);
+  try {
+    const policy: ServerPolicy = {
+      name: "test",
+      enabled: true,
+      filesystem: { paths: ["/safe"] },
+      network: false,
+      envWhitelist: [],
+    };
+    const out = bubblewrapSpawn(baseRewrite, policy);
+    assert.equal(out.command, "bwrap");
+    assert.ok(out.args.includes("--die-with-parent"));
+    assert.ok(out.args.includes("--unshare-pid"));
+    assert.ok(out.args.includes("--unshare-ipc"));
+    assert.ok(out.args.includes("--unshare-net"), "should drop network namespace");
+    assert.ok(out.args.includes("--bind"), "should bind the policy path");
+    assert.ok(out.args.includes(path.resolve("/safe")));
+    assert.ok(out.args.includes("--ro-bind"), "should read-only bind /usr etc");
+    assert.ok(out.args.includes("--"), "must delimit bwrap args from the inner command");
+    assert.ok(out.changes.some((c) => /bubblewrap-isolated/.test(c)));
+  } finally {
+    _setBubblewrapAvailableForTests(undefined);
+  }
+});
+
+test("bubblewrap keeps network when policy.network is true", () => {
+  _setBubblewrapAvailableForTests(true);
+  try {
+    const policy: ServerPolicy = {
+      name: "test",
+      enabled: true,
+      filesystem: { paths: [] },
+      network: true,
+      envWhitelist: [],
+    };
+    const out = bubblewrapSpawn(baseRewrite, policy);
+    assert.ok(!out.args.includes("--unshare-net"));
+    assert.ok(out.args.includes("--share-net"));
+  } finally {
+    _setBubblewrapAvailableForTests(undefined);
+  }
 });

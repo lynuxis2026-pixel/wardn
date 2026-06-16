@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import http from "node:http";
 import { startDaemon } from "../src/gateway/daemon.js";
 import { Logger } from "../src/gateway/logger.js";
 
@@ -199,4 +200,101 @@ test("GET /api/token refuses non-loopback ips", async (t) => {
     remoteAddress: "10.0.0.5",
   });
   assert.equal(res.statusCode, 403);
+});
+
+test("GET / serves the dashboard placeholder when dashboard/dist is missing", async (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "wardn-daemon-"));
+  process.env.WARDN_HOME = home;
+  const logger = new Logger(path.join(home, "gateway.log"));
+  const dash = path.join(home, "nope"); // doesn't exist on disk
+  const daemon = await startDaemon({ host: "127.0.0.1", port: 0, logger, dashboardDir: dash });
+  t.after(async () => {
+    await daemon.close();
+    await logger.close();
+    fs.rmSync(home, { recursive: true, force: true });
+    delete process.env.WARDN_HOME;
+  });
+
+  const res = await daemon.app.inject({ method: "GET", url: "/" });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.headers["content-type"] as string, /text\/html/);
+  assert.match(res.body, /wardn gateway is running/);
+  assert.match(res.body, /dashboard:build/);
+});
+
+test("GET / serves the built dashboard when dashboard/dist exists", async (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "wardn-daemon-"));
+  const dash = fs.mkdtempSync(path.join(os.tmpdir(), "wardn-dash-built-"));
+  fs.writeFileSync(path.join(dash, "index.html"), "<!doctype html><h1>built</h1>");
+  process.env.WARDN_HOME = home;
+  const logger = new Logger(path.join(home, "gateway.log"));
+  const daemon = await startDaemon({ host: "127.0.0.1", port: 0, logger, dashboardDir: dash });
+  t.after(async () => {
+    await daemon.close();
+    await logger.close();
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(dash, { recursive: true, force: true });
+    delete process.env.WARDN_HOME;
+  });
+
+  const res = await daemon.app.inject({ method: "GET", url: "/" });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /built/);
+});
+
+test("/api/status reflects dashboard=served when built", async (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "wardn-daemon-"));
+  const dash = fs.mkdtempSync(path.join(os.tmpdir(), "wardn-dash-built-"));
+  fs.writeFileSync(path.join(dash, "index.html"), "<!doctype html>");
+  process.env.WARDN_HOME = home;
+  const logger = new Logger(path.join(home, "gateway.log"));
+  const daemon = await startDaemon({ host: "127.0.0.1", port: 0, logger, dashboardDir: dash });
+  t.after(async () => {
+    await daemon.close();
+    await logger.close();
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(dash, { recursive: true, force: true });
+    delete process.env.WARDN_HOME;
+  });
+
+  const r = await daemon.app.inject({ method: "GET", url: "/api/status" });
+  const body = r.json() as { dashboard: string };
+  assert.equal(body.dashboard, "served");
+});
+
+test("GET /api/events returns SSE headers", async (t) => {
+  // We listen on a real port so we can read just the SSE headers + the first
+  // bytes, then disconnect cleanly. Inject() can't stream an open SSE
+  // response — it buffers the whole body, which never ends.
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "wardn-sse-"));
+  process.env.WARDN_HOME = home;
+  const logger = new Logger(path.join(home, "gateway.log"));
+  const daemon = await startDaemon({ host: "127.0.0.1", port: 0, logger });
+  const port = (daemon.app.server.address() as { port: number }).port;
+  t.after(async () => {
+    await daemon.close();
+    await logger.close();
+    fs.rmSync(home, { recursive: true, force: true });
+    delete process.env.WARDN_HOME;
+  });
+
+  const headersOk = await new Promise<{ status: number; ct: string; cc: string }>((resolve, reject) => {
+    const req = http.request(
+      { hostname: "127.0.0.1", port, path: "/api/events", method: "GET" },
+      (res) => {
+        resolve({
+          status: res.statusCode ?? 0,
+          ct: String(res.headers["content-type"] ?? ""),
+          cc: String(res.headers["cache-control"] ?? ""),
+        });
+        res.destroy();
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+
+  assert.equal(headersOk.status, 200);
+  assert.match(headersOk.ct, /text\/event-stream/);
+  assert.match(headersOk.cc, /no-cache/);
 });
