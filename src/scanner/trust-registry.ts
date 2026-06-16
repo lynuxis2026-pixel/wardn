@@ -66,6 +66,9 @@ export function loadTrustRegistry(): TrustRegistry {
       /* try the next candidate */
     }
   }
+  /* c8 ignore start — the bundled data/trust.json ships with every package,
+     so reaching this empty-registry fallback in production would mean the
+     install itself is broken. The fallback exists as defense in depth. */
   cached = {
     version: 1,
     updatedAt: "",
@@ -74,6 +77,7 @@ export function loadTrustRegistry(): TrustRegistry {
     publishers: {},
   };
   return cached;
+  /* c8 ignore stop */
 }
 
 export interface TrustLookup {

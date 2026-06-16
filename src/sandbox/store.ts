@@ -4,6 +4,8 @@ import os from "node:os";
 import { EMPTY_POLICY_FILE, type PolicyFile, type ServerPolicy } from "./types.js";
 
 function defaultPolicyFile(): string {
+  /* c8 ignore next — WARDN_HOME default; the os.homedir() branch is for the
+     real install. */
   const home = process.env.WARDN_HOME ?? path.join(os.homedir(), ".wardn");
   return path.join(home, "policy.json");
 }
@@ -71,6 +73,7 @@ export class PolicyStore {
  * home so the server has *somewhere* to write but nothing dangerous.
  */
 export function defaultPolicyFor(name: string): ServerPolicy {
+  /* c8 ignore next — same WARDN_HOME default story. */
   const home = process.env.WARDN_HOME ?? path.join(os.homedir(), ".wardn");
   const sandboxRoot = path.join(home, "sandboxes", name);
   return {

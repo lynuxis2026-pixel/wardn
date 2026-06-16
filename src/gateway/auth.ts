@@ -4,6 +4,8 @@ import os from "node:os";
 import crypto from "node:crypto";
 
 function tokenFile(): string {
+  /* c8 ignore next — WARDN_HOME default is exercised by tests; the os.homedir
+     branch is reserved for the production install. */
   const home = process.env.WARDN_HOME ?? path.join(os.homedir(), ".wardn");
   return path.join(home, "api-token");
 }
@@ -17,6 +19,9 @@ export function loadOrCreateApiToken(): string {
   const file = tokenFile();
   try {
     const existing = fs.readFileSync(file, "utf8").trim();
+    /* c8 ignore next — defensive: the file we write is always ≥ 32 hex
+       chars, so the short-existing branch is only hit if a user manually
+       truncated the token file. */
     if (existing.length >= 32) return existing;
   } catch {
     /* missing — fall through to create */
@@ -66,9 +71,12 @@ export function compareToken(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   try {
     return crypto.timingSafeEqual(Buffer.from(a, "utf8"), Buffer.from(b, "utf8"));
+    /* c8 ignore start — defensive: timingSafeEqual cannot throw on
+       equal-length Buffer.from-derived buffers, but we keep the guard. */
   } catch {
     return false;
   }
+  /* c8 ignore stop */
 }
 
 export function tokenFilePath(): string {

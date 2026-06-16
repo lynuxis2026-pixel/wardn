@@ -137,8 +137,8 @@ Lopend geheugen: beslissingen, status, openstaande punten. Nieuwste bovenaan per
   - daemon (4): GET /api/status, GET /api/scan, POST /api/sandbox/:name with body, no-body toggle
   - registry (3): findServerByName resolve, unknown name, multi-client name conflict
   - sandbox (extra): camelCase dangerous-tool detection, safe-name no-block, allowedTools override
-- `npm run test:coverage` → lines 95.33% / functions 98.98% / branches 85.28% / statements 95.33%.
-  Allemaal boven de nieuwe gates (lines/functions ≥95%, branches ≥85%).
+- `npm run test:coverage` → **lines 100% / functions 100% / statements 100% / branches 91.91%**.
+  Gates verhoogd naar 100/100/100/90.
 - Extra suites toegevoegd in deze ronde:
   - bubblewrap (3 tests, includes Linux-only smoke skip op andere platforms)
   - doctor (2 tests, dashboard pass/fail paden)

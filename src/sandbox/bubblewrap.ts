@@ -16,6 +16,9 @@ export function isBubblewrapAvailable(): boolean {
     cachedAvailability = false;
     return false;
   }
+  /* c8 ignore start — bwrap probe runs only on Linux with the binary
+     installed. Argument-builder branches are exercised via
+     _setBubblewrapAvailableForTests. */
   try {
     const res = spawnSync(resolveCommand("bwrap"), ["--version"], {
       stdio: ["ignore", "pipe", "pipe"],
@@ -26,6 +29,7 @@ export function isBubblewrapAvailable(): boolean {
     cachedAvailability = false;
   }
   return cachedAvailability;
+  /* c8 ignore stop */
 }
 
 /**

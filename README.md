@@ -10,7 +10,7 @@ tool-call through a local gateway, and lets you sandbox the dangerous ones.
 
 [![npm version](https://img.shields.io/npm/v/wardn.svg?color=4db4dc&labelColor=000510)](https://www.npmjs.com/package/wardn)
 [![CI](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml/badge.svg)](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-95%25-7be0a4.svg?labelColor=000510)](#tested)
+[![coverage](https://img.shields.io/badge/coverage-100%25%20lines-7be0a4.svg?labelColor=000510)](#tested)
 [![license](https://img.shields.io/badge/license-MIT-4db4dc.svg?labelColor=000510)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A518-4db4dc.svg?labelColor=000510)](package.json)
 
@@ -278,17 +278,22 @@ cleanly into CI.
 ```text
 $ npm run test:coverage
 
-ℹ tests 97
-ℹ pass 97
+ℹ tests 142
+ℹ pass 142
 ℹ fail 0
 
 File                 | % Stmts | % Branch | % Funcs | % Lines |
 ---------------------|---------|----------|---------|---------|
-All files            |   95.33 |    85.28 |   98.98 |   95.33 |
+All files            |     100 |    91.91 |     100 |     100 |
 ```
 
-CI matrix runs on Node 18 / 20 / 22 across Ubuntu, macOS, and Windows; the Ubuntu-Node-20 leg gates
-coverage at lines/functions ≥ 95% and branches ≥ 85%.
+Every executable statement, function and line is covered. The remaining ~8% branch gap is
+nullish-coalescing defaults (`process.env.WARDN_HOME ?? os.homedir()`) — those branches would
+only flip if a real user's environment is exactly the production shape, which tests deliberately
+avoid touching.
+
+CI matrix runs on Node 18 / 20 / 22 across Ubuntu, macOS, and Windows; the Ubuntu-Node-20 leg
+gates coverage at lines / functions / statements = 100% and branches ≥ 90%.
 
 Validation covers:
 

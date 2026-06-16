@@ -9,18 +9,27 @@ export interface ClientConfigLocation {
   serversKey: "mcpServers" | "servers";
 }
 
-const home = os.homedir();
-const platform = process.platform;
+export interface PlatformContext {
+  /** "darwin" / "win32" / "linux" / ... — defaults to `process.platform`. */
+  platform?: NodeJS.Platform;
+  /** Home directory — defaults to os.homedir(). */
+  home?: string;
+  /** APPDATA env override; defaults to `process.env.APPDATA`. */
+  appData?: string;
+}
 
-function appData(): string {
-  return process.env.APPDATA ?? path.join(home, "AppData", "Roaming");
+function appDataDir(home: string, override: string | undefined): string {
+  return override ?? path.join(home, "AppData", "Roaming");
 }
 
 /**
  * Standard, well-known config locations for MCP-capable clients across OSes.
- * We only return paths relevant to the current platform.
+ * Pure function — every branch is reachable by passing a different ctx.
  */
-export function knownClientLocations(): ClientConfigLocation[] {
+export function knownClientLocations(ctx: PlatformContext = {}): ClientConfigLocation[] {
+  const platform = ctx.platform ?? process.platform;
+  const home = ctx.home ?? os.homedir();
+  const appData = appDataDir(home, ctx.appData ?? process.env.APPDATA);
   const locs: ClientConfigLocation[] = [];
 
   // Claude Desktop
@@ -33,7 +42,7 @@ export function knownClientLocations(): ClientConfigLocation[] {
   } else if (platform === "win32") {
     locs.push({
       client: "claude-desktop",
-      file: path.join(appData(), "Claude", "claude_desktop_config.json"),
+      file: path.join(appData, "Claude", "claude_desktop_config.json"),
       serversKey: "mcpServers",
     });
   } else {
@@ -61,7 +70,7 @@ export function knownClientLocations(): ClientConfigLocation[] {
   } else if (platform === "win32") {
     locs.push({
       client: "vscode",
-      file: path.join(appData(), "Code", "User", "mcp.json"),
+      file: path.join(appData, "Code", "User", "mcp.json"),
       serversKey: "servers",
     });
   } else {

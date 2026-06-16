@@ -262,6 +262,114 @@ test("/api/status reflects dashboard=served when built", async (t) => {
   assert.equal(body.dashboard, "served");
 });
 
+test("tailLogFile resets its read position when the log is truncated", async (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "wardn-trunc-"));
+  process.env.WARDN_HOME = home;
+  const logFile = path.join(home, "gateway.log");
+  // Seed the log with some content first.
+  fs.writeFileSync(
+    logFile,
+    JSON.stringify({ ts: "2026-06-16T00:00:00.000Z", server: "x", direction: "system", message: "first" }) + "\n",
+  );
+  const logger = new Logger(logFile);
+  const daemon = await startDaemon({ host: "127.0.0.1", port: 0, logger });
+  const port = (daemon.app.server.address() as { port: number }).port;
+  t.after(async () => {
+    await daemon.close();
+    await logger.close();
+    fs.rmSync(home, { recursive: true, force: true });
+    delete process.env.WARDN_HOME;
+  });
+
+  const chunks: string[] = [];
+  await new Promise<void>((resolve, reject) => {
+    const req = http.request(
+      { hostname: "127.0.0.1", port, path: "/api/events", method: "GET" },
+      (res) => {
+        res.setEncoding("utf8");
+        res.on("data", (chunk: string) => {
+          chunks.push(chunk);
+          if (chunks.join("").includes("after truncate")) {
+            res.destroy();
+            resolve();
+          }
+        });
+        res.on("error", reject);
+      },
+    );
+    req.on("error", reject);
+    req.end();
+
+    // First wait for the watcher to attach, then truncate the file (force a
+    // rotation), then write a new line.
+    setTimeout(() => {
+      fs.writeFileSync(logFile, "");
+    }, 350);
+    setTimeout(() => {
+      fs.appendFileSync(
+        logFile,
+        JSON.stringify({ ts: "2026-06-16T00:00:00.000Z", server: "x", direction: "system", message: "after truncate" }) + "\n",
+      );
+    }, 700);
+
+    setTimeout(() => reject(new Error("truncation path did not deliver")), 5_000);
+  });
+
+  assert.ok(chunks.join("").includes("after truncate"));
+});
+
+test("GET /api/events streams log entries appended by another process to the log file", async (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "wardn-tail-"));
+  process.env.WARDN_HOME = home;
+  const logFile = path.join(home, "gateway.log");
+  // Pre-create the file so fs.watchFile has something to watch from second 0.
+  fs.writeFileSync(logFile, "");
+  const logger = new Logger(logFile);
+  const daemon = await startDaemon({ host: "127.0.0.1", port: 0, logger });
+  const port = (daemon.app.server.address() as { port: number }).port;
+  t.after(async () => {
+    await daemon.close();
+    await logger.close();
+    fs.rmSync(home, { recursive: true, force: true });
+    delete process.env.WARDN_HOME;
+  });
+
+  // Open the SSE stream and collect a few chunks.
+  const chunks: string[] = [];
+  await new Promise<void>((resolve, reject) => {
+    const req = http.request(
+      { hostname: "127.0.0.1", port, path: "/api/events", method: "GET" },
+      (res) => {
+        res.setEncoding("utf8");
+        res.on("data", (chunk: string) => {
+          chunks.push(chunk);
+          if (chunks.join("").includes("hello tail")) {
+            res.destroy();
+            resolve();
+          }
+        });
+        res.on("error", reject);
+      },
+    );
+    req.on("error", reject);
+    req.end();
+
+    // Append to the log file *via fs* (not through the in-process logger) so
+    // the watchFile-based tail path is the only thing that can carry it to
+    // SSE. Wait a beat so the watcher has fully attached.
+    setTimeout(() => {
+      fs.appendFileSync(
+        logFile,
+        JSON.stringify({ ts: "2026-06-16T00:00:00.000Z", server: "x", direction: "system", message: "hello tail" }) + "\n",
+      );
+    }, 350);
+
+    setTimeout(() => reject(new Error("tail did not deliver within timeout")), 5_000);
+  });
+
+  assert.ok(chunks.join("").includes("hello tail"));
+});
+
 test("GET /api/events returns SSE headers", async (t) => {
   // We listen on a real port so we can read just the SSE headers + the first
   // bytes, then disconnect cleanly. Inject() can't stream an open SSE

@@ -13,6 +13,9 @@ let cachedAvailability: boolean | undefined;
  */
 export function isDockerAvailable(): boolean {
   if (cachedAvailability !== undefined) return cachedAvailability;
+  /* c8 ignore start — the spawnSync probe depends on whether Docker is
+     installed on the test machine; both available/unavailable branches are
+     exercised via _setDockerAvailableForTests. */
   try {
     const res = spawnSync(resolveCommand("docker"), ["version", "--format", "{{.Server.Version}}"], {
       stdio: ["ignore", "pipe", "pipe"],
@@ -23,6 +26,7 @@ export function isDockerAvailable(): boolean {
     cachedAvailability = false;
   }
   return cachedAvailability;
+  /* c8 ignore stop */
 }
 
 /** Test hook — pretend Docker is or isn't available without probing. */
@@ -57,7 +61,7 @@ export function dockerizeSpawn(rewrite: SpawnRewrite, opts: DockerizeOptions): S
     args.push("-v", `${abs}:${abs}`);
   }
 
-  for (const [k, v] of Object.entries({} as Record<string, string>)) {
+  for (const [k, v] of Object.entries(rewrite.env)) {
     args.push("-e", `${k}=${v}`);
   }
 

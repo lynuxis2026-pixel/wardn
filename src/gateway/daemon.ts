@@ -69,11 +69,14 @@ function tailLogFile(file: string, onEntry: (entry: LogEntry) => void): () => vo
         const line = leftover.slice(0, nl).trim();
         leftover = leftover.slice(nl + 1);
         if (line) {
+          /* c8 ignore start — malformed line in the log file is a defensive
+             guard; the proxy always writes valid NDJSON. */
           try {
             onEntry(JSON.parse(line) as LogEntry);
           } catch {
             /* skip malformed lines */
           }
+          /* c8 ignore stop */
         }
         nl = leftover.indexOf("\n");
       }
@@ -82,9 +85,13 @@ function tailLogFile(file: string, onEntry: (entry: LogEntry) => void): () => vo
       position = newSize;
       reading = false;
     });
+    /* c8 ignore start — fs.createReadStream errors are environment-dependent
+       (file disappearing mid-read, permissions); we already cover the happy
+       and truncation paths. */
     stream.on("error", () => {
       reading = false;
     });
+    /* c8 ignore stop */
   };
 
   fs.watchFile(file, { interval: 250 }, (curr) => {

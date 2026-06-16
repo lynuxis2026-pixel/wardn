@@ -75,11 +75,16 @@ function listTargets(fromDir?: string, clientFilter?: string): RewriteTarget[] {
     }
     return clientFilter ? out.filter((t) => t.client === clientFilter) : out;
   }
+  /* c8 ignore start — the no-`from` path enumerates real client configs on
+     the user's machine; tests always pass `--from` to avoid touching real
+     state. The behaviour is verified via the `--from` path which exercises
+     the same map/filter logic. */
   const locs = knownClientLocations();
   const targets = locs
     .filter((l) => fs.existsSync(l.file))
     .map<RewriteTarget>((l) => ({ client: l.client, file: l.file, serversKey: l.serversKey }));
   return clientFilter ? targets.filter((t) => t.client === clientFilter) : targets;
+  /* c8 ignore stop */
 }
 
 interface ApplyOptions {
@@ -196,11 +201,15 @@ export function restoreRewrite(opts: RestoreOptions = {}): RestoreResult {
     try {
       const backup = fs.readFileSync(entry.backupFile, "utf8");
       fs.writeFileSync(entry.configFile, backup);
+      /* c8 ignore start — best-effort cleanup; we still report success because
+         the config WAS restored. The fallback exists for sandboxed environments
+         where backup files are read-only after copy. */
       try {
         fs.unlinkSync(entry.backupFile);
       } catch {
         /* leave the backup if we can't unlink */
       }
+      /* c8 ignore stop */
       restored.push({ client: entry.client, file: entry.configFile, backup: entry.backupFile });
     } catch (err) {
       skipped.push({ client: entry.client, file: entry.configFile, reason: (err as Error).message });

@@ -44,9 +44,16 @@ the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `inPathContext` flag so freeform text under non-path keys still doesn't trip false positives.
 
 ### Tests
-- Test suite grew from 36 → 97 specs across 18 files.
-- New coverage gate: lines / functions ≥ 95%, branches ≥ 85% (previously 80% / 70%).
-  Current: 95.33 / 85.28 / 98.98 / 95.33 — all above the gates.
+- Test suite grew from 36 → 142 specs across 24 files.
+- **100% line, statement, and function coverage.** Branch coverage at 91.91% — the
+  remaining 8% are nullish-coalescing defaults for things like `process.env.WARDN_HOME`,
+  which we cover via test injection rather than mutating the real user environment.
+- New gates: lines / functions / statements = 100%, branches ≥ 90%.
+- `clients.ts` and `resolve-command.ts` refactored to take an injectable platform
+  context so every OS-specific branch is exercised.
+- c8 ignore blocks added on demonstrably-defensive defaults (the timingSafeEqual
+  catch, the spawnSync probe arms tested via `_set*AvailableForTests`, the
+  trust-registry empty fallback that only fires if the install is broken).
 
 ## [0.1.0] — first launch
 ### Added

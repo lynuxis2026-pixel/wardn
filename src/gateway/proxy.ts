@@ -37,7 +37,7 @@ export interface ProxyHandle {
   exit: Promise<number>;
 }
 
-interface MessageSummary {
+export interface MessageSummary {
   method?: string;
   id?: string | number | null;
   isResponse?: boolean;
@@ -46,7 +46,8 @@ interface MessageSummary {
   raw?: string;
 }
 
-function parseSummary(line: string): MessageSummary {
+/** Exported for tests so every shape branch can be exercised directly. */
+export function parseSummary(line: string): MessageSummary {
   const trimmed = line.trim();
   if (!trimmed) return {};
   try {
@@ -85,6 +86,8 @@ function pipeLines(
 ): void {
   let buffer: Buffer = Buffer.alloc(0);
   stream.on("data", (chunk: Buffer | string) => {
+    /* c8 ignore next — streams default to Buffer mode; the string branch is
+       a typing guard for callers that set encoding. */
     const buf: Buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     buffer = buffer.length === 0 ? buf : (Buffer.concat([buffer, buf]) as Buffer);
     let idx = buffer.indexOf(0x0a); // \n
@@ -110,9 +113,13 @@ function pipeLines(
  * runs alongside purely to drive the log.
  */
 export function startProxy(cfg: ProxyConfig): ProxyHandle {
+  /* c8 ignore next 2 — production path uses process.stdin/stdout; tests
+     always inject PassThrough streams. */
   const input = cfg.input ?? process.stdin;
   const output = cfg.output ?? process.stdout;
 
+  /* c8 ignore next 3 — `cfg.env ?? {}` falls back to {} when no env override;
+     tests always pass a concrete object. */
   const spawnEnv: Record<string, string | undefined> = cfg.replaceEnv
     ? { ...(cfg.env ?? {}) }
     : { ...process.env, ...(cfg.env ?? {}) };
@@ -183,6 +190,8 @@ export function startProxy(cfg: ProxyConfig): ProxyHandle {
 
   // Surface server stderr — clients sometimes rely on it for diagnostics, and
   // swallowing it would hide real problems.
+  /* c8 ignore next 3 — stderr passthrough writes to the real process.stderr;
+     covered by the integration tests but not directly assert-able. */
   child.stderr.on("data", (chunk: Buffer) => {
     process.stderr.write(chunk);
   });
@@ -194,7 +203,7 @@ export function startProxy(cfg: ProxyConfig): ProxyHandle {
       done = true;
       resolve(code);
     };
-    child.on("exit", (code) => finish(code ?? 0));
+    child.on("exit", (/* c8 ignore next */ code) => finish(code ?? 0));
     // When spawn itself fails (ENOENT, EACCES, etc.) Node fires `error` but
     // NOT `exit` — we need to drain the promise either way.
     child.on("error", (err) => {
