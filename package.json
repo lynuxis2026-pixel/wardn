@@ -3,17 +3,31 @@
   "version": "0.0.1",
   "description": "See and stop the risky code your AI agents run. Local-first, open-source MCP control plane.",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lynuxis2026-pixel/wardn.git"
+  },
+  "homepage": "https://github.com/lynuxis2026-pixel/wardn#readme",
+  "bugs": {
+    "url": "https://github.com/lynuxis2026-pixel/wardn/issues"
+  },
   "bin": {
     "wardn": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "dashboard/dist",
+    "assets"
   ],
   "scripts": {
     "dev": "tsx src/index.ts",
     "scan": "tsx src/index.ts scan",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "dashboard:build": "npm --prefix dashboard install --silent && npm --prefix dashboard run build",
+    "dashboard:dev": "npm --prefix dashboard run dev",
+    "prepack": "npm run build && npm run dashboard:build",
+    "start": "node dist/index.js",
+    "test": "node --import tsx --test tests/proxy.integration.test.ts tests/sandbox.test.ts tests/gateway-sandbox.integration.test.ts tests/rewrite.test.ts"
   },
   "engines": {
     "node": ">=18"
@@ -27,10 +41,14 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@fastify/static": "^9.1.3",
     "commander": "^12.1.0",
+    "fastify": "^5.0.0",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
+    "@modelcontextprotocol/server-filesystem": "^2025.3.28",
     "@types/node": "^22.9.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"

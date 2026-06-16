@@ -17,64 +17,61 @@ samenvatting; geen vals alarm op officiële servers.
 
 ---
 
-## ⏳ Increment 2 — Gateway (proxy-flow)
+## ✅ Increment 2 — Gateway (proxy-flow)  (KLAAR)
 
 Lokale daemon die tussen client en MCP-servers zit, zodat we straks kunnen sandboxen, permissioneren en loggen.
 
-**Claude Code-prompt:**
-> Implementeer increment 2 (Gateway) uit BUILD_PLAN.md. Bouw `src/gateway/` als een Fastify-daemon die
-> MCP-servers spawnt en hun stdio proxyt, plus een HTTP/SSE-endpoint. Log elke JSON-RPC tool-call (server,
-> methode, params-samenvatting, duur). Voeg `wardn gateway` toe aan de CLI (poort + status tonen). Schrijf
-> een integratietest die een echte stdio MCP-server (bv. `@modelcontextprotocol/server-filesystem` met een
-> veilig sandbox-pad) door de gateway laat lopen en bevestigt dat een `tools/list`-call identiek terugkomt
-> én in de log verschijnt. Loop elke flow langs. Update memory.md en BUILD_PLAN.md. Terminals op de achtergrond.
+**Geleverd:** `src/gateway/proxy.ts` (byte-faithful stdio-proxy met JSON-RPC-parse naast de wire),
+`src/gateway/logger.ts` (NDJSON-log onder `~/.wardn/gateway.log`, EventEmitter voor in-process abonnees),
+`src/gateway/daemon.ts` (Fastify-daemon, `GET /status` + SSE `GET /events`, file-tail zodat cross-process
+proxies óók opduiken), `src/gateway/registry.ts`, en de CLI-commando's `wardn gateway run <name>` +
+`wardn gateway start`. Integratietest via `npm test` laat een echte `@modelcontextprotocol/server-filesystem`
+door de proxy lopen en bevestigt `tools/list` + beide log-richtingen + duur. Manueel geverifieerd op /status,
+SSE-headers, externe log-writers, en foutpaden (unknown server, remote transport).
 
-**Acceptatie:** echte tool-call loopt via de gateway, werkt identiek, staat in de live-log.
-
----
-
-## ⏳ Increment 3 — Sandbox + permissies (sandbox-flow)
-
-**Claude Code-prompt:**
-> Implementeer increment 3 (Sandbox + permissies) uit BUILD_PLAN.md. Bouw `src/sandbox/`: een per-server
-> permissie-manifest (filesystem-paden whitelist, netwerk aan/uit, env-whitelist) opgeslagen in een lokaal
-> config-bestand. Gebruik Docker voor isolatie in de MVP: detecteer of Docker beschikbaar is en geef een
-> nette, duidelijke fout als het ontbreekt. Voeg `wardn sandbox <name>` toe die het manifest toepast en de
-> toggle in de config zet. Werk de scanner bij zodat een gesandboxte server zijn risky-signaal verliest
-> binnen de sandbox-grenzen. Loop elke flow langs: scan → sandbox toepassen → opnieuw scannen moet aantonen
-> dat de permissie echt is ingeperkt; schrijf een test die dit bewijst. Update memory.md en BUILD_PLAN.md.
-> Terminals op de achtergrond.
-
-**Acceptatie:** een server sandboxen verandert aantoonbaar wat hij kan (bv. broad-fs valt weg);
-permissie-toggle werkt zichtbaar.
+**Acceptatie:** ✅ echte tool-call loopt via de gateway, werkt identiek, staat in de log; daemon serveert
+status + SSE; integratietest groen.
 
 ---
 
-## ⏳ Increment 4 — Dashboard (visualize)
+## ✅ Increment 3 — Sandbox + permissies (sandbox-flow)  (KLAAR)
 
-**Claude Code-prompt:**
-> Implementeer increment 4 (Dashboard) uit BUILD_PLAN.md. Bouw een React/Vite-frontend in `dashboard/` in de
-> donkere Lynuxis-stijl (achtergrond `#000510`, cyan accenten `#4db4dc`/`#7fd0ee`), geserveerd door de daemon
-> op een lokale poort. Toon: lijst van servers met trust-badges (risky/review/trusted), per server de
-> permissies en de redenen, en de live tool-call-log uit de gateway. Voeg een één-klik 'Sandbox'-knop toe die
-> de sandbox-flow aanroept. Loop elke knop en elke flow langs: dashboard opent, servers laden, badges kloppen
-> met `wardn scan --json`, sandbox-knop werkt end-to-end, live-log toont echte calls. Update memory.md en
-> BUILD_PLAN.md. Terminals op de achtergrond.
+**Geleverd:** `src/sandbox/` met types + store (`~/.wardn/policy.json`), `enforce.ts`
+(`applySpawnPolicy` herschrijft args + filtert env; `decideOutgoing` keert out-of-policy `tools/call`
+terug als JSON-RPC `result.isError` zónder de server te bereiken), `docker.ts` (detecteert + wraps
+spawn met `--network none` + read-only mounts, anders stille fallback naar policy-only met duidelijke
+CLI-melding). Scanner downgradet broad-fs als de policy het pad inperkt en zet een ⛨-marker. CLI:
+`wardn sandbox enable|disable|status`. Integratietest bewijst dat een out-of-policy `tools/call` door
+de gateway wordt afgekapt; demo-flow scan → enable → rescan laat filesystem van RISKY naar TRUSTED gaan.
 
-**Acceptatie:** de "X servers, Y risky"-screenshot is reproduceerbaar in de browser; sandbox-knop werkt.
+**Acceptatie:** ✅ aantoonbare inperking; scanner reflecteert het; toggle werkt zowel via CLI als HTTP-API.
 
 ---
 
-## ⏳ Increment 5 — Cross-client config-rewrite (cross-client-flow)
+## ✅ Increment 4 — Dashboard (visualize)  (KLAAR)
 
-**Claude Code-prompt:**
-> Implementeer increment 5 (Cross-client config-rewrite) uit BUILD_PLAN.md. Bouw `src/rewrite/`: herschrijf de
-> Claude Desktop / Cursor / VS Code-configs zodat MCP-verkeer via de wardn-gateway loopt, met een backup van
-> het origineel en een `wardn restore` om alles terug te zetten. Loop elke flow langs: rewrite toepassen in
-> elke client, verifiëren dat de client via de gateway praat, en daarna volledig terugdraaien zonder restanten;
-> schrijf tests met fixture-configs. Update memory.md en BUILD_PLAN.md. Terminals op de achtergrond.
+**Geleverd:** `dashboard/` (React + Vite + TypeScript) in Lynuxis-stijl (`#000510` achtergrond, cyan
+`#4db4dc` accenten, monospace headings, summary-stats + ServerCards + sticky LiveLog). De daemon kreeg
+`/api/status`, `/api/scan`, `POST /api/sandbox/:name` en SSE `/api/events`, plus `@fastify/static` om
+`dashboard/dist` op `/` te serveren (placeholder als nog niet gebouwd). `EventSource` met
+reconnect-backoff. Bouwscripts `dashboard:build` + `dashboard:dev` (Vite proxy `/api` → 7331).
 
-**Acceptatie:** rewrite werkt in alle clients en is volledig terug te draaien.
+**Acceptatie:** ✅ daemon serveert dashboard HTML + JS bundle; `/api/scan` toont 5/1/3/1 op fixtures;
+POST `/api/sandbox/:name` zet beleid en `/api/scan` toont meteen 0 risky.
+
+---
+
+## ✅ Increment 5 — Cross-client config-rewrite (cross-client-flow)  (KLAAR)
+
+**Geleverd:** `src/rewrite/` herschrijft elke stdio-server in client-configs naar
+`npx -y wardn gateway run <name>` (template overrideable via `--invoke`). Remote/url-servers worden
+overgeslagen. Originelen onder `~/.wardn/backups/`; een `rewrites.json`-index koppelt configs aan
+backups zodat restore byte-identiek terugzet. CLI: `wardn rewrite apply|restore|status`. Tests:
+apply muteert stdio servers + bewaart overige top-level keys, restore byte-identiek, dubbele apply
+wordt geweigerd.
+
+**Acceptatie:** ✅ rewrite werkt op fixtures voor zowel claude_desktop als cursor; restore geeft de
+oorspronkelijke bytes terug; status laat zien wat actief is.
 
 ---
 

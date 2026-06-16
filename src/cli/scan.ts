@@ -1,7 +1,9 @@
 import pc from "picocolors";
 import { discoverFromKnownClients, discoverFromDir } from "../discovery/index.js";
 import { scanAll, summarize } from "../scanner/index.js";
+import { PolicyStore } from "../sandbox/store.js";
 import type { ScanResult, TrustLevel } from "../types.js";
+import type { ServerPolicy } from "../sandbox/types.js";
 
 export interface ScanOptions {
   from?: string;
@@ -20,11 +22,12 @@ function rank(level: TrustLevel): number {
 
 export function runScan(opts: ScanOptions): number {
   const servers = opts.from ? discoverFromDir(opts.from) : discoverFromKnownClients();
-  const results = scanAll(servers);
+  const policies: Record<string, ServerPolicy> = new PolicyStore().read().servers;
+  const results = scanAll(servers, policies);
   const summary = summarize(results);
 
   if (opts.json) {
-    process.stdout.write(JSON.stringify({ summary, results }, null, 2) + "\n");
+    process.stdout.write(JSON.stringify({ summary, results, policies }, null, 2) + "\n");
     return summary.risky > 0 ? 1 : 0;
   }
 
@@ -49,9 +52,15 @@ export function runScan(opts: ScanOptions): number {
   const sorted = [...results].sort((a, b) => rank(a.level) - rank(b.level) || a.server.name.localeCompare(b.server.name));
   for (const r of sorted) {
     const name = r.level === "risky" ? pc.bold(r.server.name) : r.server.name;
-    process.stdout.write(`  ${BADGE[r.level]}  ${name.padEnd(20)} ${pc.dim(`(${r.server.client})`)}\n`);
+    const sandboxed = r.signals.some((s) => s.id === "sandboxed");
+    const sandboxTag = sandboxed ? "  " + pc.cyan("⛨ sandboxed") : "";
+    process.stdout.write(`  ${BADGE[r.level]}  ${name.padEnd(20)} ${pc.dim(`(${r.server.client})`)}${sandboxTag}\n`);
     for (const sig of r.signals.filter((s) => s.severity !== "info")) {
       process.stdout.write(`             ${pc.dim("↳")} ${sig.reason}\n`);
+    }
+    if (sandboxed) {
+      const note = r.signals.find((s) => s.id === "sandboxed");
+      if (note) process.stdout.write(`             ${pc.cyan("⛨")} ${pc.dim(note.reason)}\n`);
     }
   }
 
@@ -65,7 +74,7 @@ export function runScan(opts: ScanOptions): number {
   process.stdout.write("  " + parts.join(pc.dim(" · ")) + "\n");
 
   if (summary.risky > 0 || summary.review > 0) {
-    process.stdout.write("\n  " + pc.dim("Next: ") + pc.cyan("wardn sandbox <name>") + pc.dim("  (coming soon — isolates a server)") + "\n");
+    process.stdout.write("\n  " + pc.dim("Next: ") + pc.cyan("wardn sandbox enable <name>") + pc.dim("  (isolate a risky server)") + "\n");
   }
   process.stdout.write("\n");
 

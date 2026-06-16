@@ -1,4 +1,7 @@
 node_modules/
 dist/
+dashboard/dist/
+*.tsbuildinfo
 *.log
 .DS_Store
+.wardn/

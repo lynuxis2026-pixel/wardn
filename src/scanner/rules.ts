@@ -35,7 +35,7 @@ function packageArg(server: McpServer): string | undefined {
   return undefined;
 }
 
-function isBroadPath(p: string): boolean {
+export function isBroadPath(p: string): boolean {
   const home = os.homedir();
   const normalized = path.normalize(p);
   if (normalized === "/" || normalized === "\\") return true;

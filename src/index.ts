@@ -2,6 +2,9 @@
 import { Command } from "commander";
 import pc from "picocolors";
 import { runScan } from "./cli/scan.js";
+import { runGateway, startGatewayDaemon } from "./cli/gateway.js";
+import { enableSandbox, disableSandbox, showSandbox } from "./cli/sandbox.js";
+import { applyCommand, restoreCommand, statusCommand } from "./cli/rewrite.js";
 
 const program = new Command();
 
@@ -20,21 +23,92 @@ program
     process.exitCode = code;
   });
 
-program
-  .command("sandbox <name>")
-  .description("Isolate a server with explicit permissions (coming soon)")
-  .action((name: string) => {
-    process.stdout.write(
-      "\n" + pc.yellow("Not implemented yet.") + ` Sandboxing "${name}" lands in the next increment.\n` +
-        pc.dim("For now, run ") + pc.cyan("wardn scan") + pc.dim(" to see what's running.\n\n"),
-    );
+const sandbox = program
+  .command("sandbox")
+  .description("Manage per-server sandbox policies (filesystem, network, env)");
+
+sandbox
+  .command("enable <name>")
+  .description("Sandbox a server; creates a default-locked policy if none exists")
+  .option("--path <dir>", "filesystem path the server may touch (repeatable)", (v, a: string[]) => [...a, v], [] as string[])
+  .option("--allow-network", "permit outbound network from the server", false)
+  .option("--allow-env <key>", "env var to pass through (repeatable)", (v, a: string[]) => [...a, v], [] as string[])
+  .option("--from <dir>", "resolve <name> from JSON configs in a directory")
+  .action((name: string, opts: { path?: string[]; allowNetwork?: boolean; allowEnv?: string[]; from?: string }) => {
+    const code = enableSandbox(name, {
+      paths: opts.path,
+      allowNetwork: opts.allowNetwork,
+      allowEnv: opts.allowEnv,
+      from: opts.from,
+    });
+    process.exitCode = code;
   });
 
-program
+sandbox
+  .command("disable <name>")
+  .description("Disable the sandbox for a server (policy is preserved)")
+  .action((name: string) => {
+    process.exitCode = disableSandbox(name);
+  });
+
+sandbox
+  .command("status [name]")
+  .description("Show the current sandbox policies")
+  .action((name?: string) => {
+    process.exitCode = showSandbox(name);
+  });
+
+const gateway = program
   .command("gateway")
-  .description("Run the local MCP gateway (coming soon)")
+  .description("Local MCP gateway: stdio proxy + HTTP/SSE daemon");
+
+gateway
+  .command("run <name>")
+  .description("Spawn a server by name and proxy its stdio (applies sandbox policy if any)")
+  .option("--from <dir>", "resolve <name> from JSON configs in a directory")
+  .action(async (name: string, opts: { from?: string }) => {
+    const code = await runGateway(name, { from: opts.from });
+    process.exitCode = code;
+  });
+
+gateway
+  .command("start")
+  .description("Start the long-running gateway daemon (HTTP + SSE + dashboard)")
+  .option("-p, --port <port>", "listen on this port", (v) => Number.parseInt(v, 10))
+  .option("-H, --host <host>", "bind to this host")
+  .option("--from <dir>", "use fixture configs in <dir> for /api/scan instead of the real client configs")
+  .action(async (opts: { port?: number; host?: string; from?: string }) => {
+    await startGatewayDaemon({ port: opts.port, host: opts.host, from: opts.from });
+  });
+
+const rewrite = program
+  .command("rewrite")
+  .description("Route MCP traffic through wardn by rewriting client configs (with backup)");
+
+rewrite
+  .command("apply")
+  .description("Rewrite each discovered MCP server to call wardn gateway run <name>")
+  .option("--client <name>", "limit to a specific client (claude-desktop / cursor / vscode)")
+  .option("--invoke <template>", `command template; {name} is substituted (default: "${"npx -y wardn gateway run {name}"}")`)
+  .option("--from <dir>", "rewrite JSON configs in <dir> instead of the standard locations")
+  .action((opts: { client?: string; invoke?: string; from?: string }) => {
+    process.exitCode = applyCommand(opts);
+  });
+
+rewrite
+  .command("restore")
+  .description("Restore previously-rewritten client configs from backups")
+  .option("--client <name>", "limit to a specific client")
+  .option("--from <dir>", "restore configs in <dir> instead of the standard locations")
+  .action((opts: { client?: string; from?: string }) => {
+    process.exitCode = restoreCommand(opts);
+  });
+
+rewrite
+  .command("status")
+  .description("Show which client configs are currently rewritten")
   .action(() => {
-    process.stdout.write("\n" + pc.yellow("Not implemented yet.") + " The gateway lands after discovery + scan are proven.\n\n");
+    process.exitCode = statusCommand();
   });
 
 program.parse();
