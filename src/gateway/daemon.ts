@@ -18,6 +18,7 @@ import {
   compareToken,
   tokenFilePath,
 } from "./auth.js";
+import { renderBadge, isValidShow, isValidTheme } from "./badge.js";
 
 export interface DaemonOptions {
   port: number;
@@ -181,6 +182,21 @@ export async function startDaemon(opts: DaemonOptions): Promise<DaemonHandle> {
     const policies = new PolicyStore().read().servers;
     const results = scanAll(servers, policies);
     return { summary: summarize(results), results, policies };
+  });
+
+  app.get<{ Querystring: { show?: string; theme?: string } }>("/api/badge.svg", async (req, reply) => {
+    const servers = opts.scanFrom ? discoverFromDir(opts.scanFrom) : discoverFromKnownClients();
+    const policies = new PolicyStore().read().servers;
+    const results = scanAll(servers, policies);
+    const summary = summarize(results);
+    const show = isValidShow(req.query.show) ? req.query.show : "summary";
+    const theme = isValidTheme(req.query.theme) ? req.query.theme : "dark";
+    const svg = renderBadge({ summary, show, theme });
+    reply
+      .type("image/svg+xml")
+      .header("cache-control", "no-cache, max-age=10")
+      .header("x-content-type-options", "nosniff")
+      .send(svg);
   });
 
   app.post<{ Params: { name: string }; Body: SandboxBody }>("/api/sandbox/:name", async (req, reply) => {

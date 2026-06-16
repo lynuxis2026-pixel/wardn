@@ -3,20 +3,31 @@
   <desc id="how-desc">Four-step flow: scan discovers and scores every MCP server; sandbox locks down the dangerous ones; gateway routes every tool-call through wardn with live logging; the dashboard visualises the whole thing.</desc>
 
   <defs>
-    <radialGradient id="howbg" cx="50%" cy="0%" r="80%">
-      <stop offset="0%" stop-color="#4db4dc" stop-opacity="0.08"/>
+    <linearGradient id="howFrame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7fd0ee" stop-opacity="0.18"/>
+      <stop offset="35%" stop-color="#7fd0ee" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="howGlow" cx="50%" cy="0%" r="80%">
+      <stop offset="0%" stop-color="#4db4dc" stop-opacity="0.10"/>
       <stop offset="60%" stop-color="#4db4dc" stop-opacity="0"/>
     </radialGradient>
+    <pattern id="howDots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="1" fill="#7fd0ee" opacity="0.07"/>
+    </pattern>
+    <filter id="howShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000510" flood-opacity="0.6"/>
+    </filter>
   </defs>
 
   <rect width="880" height="240" fill="#000510"/>
-  <rect width="880" height="240" fill="url(#howbg)"/>
+  <rect width="880" height="240" fill="url(#howDots)"/>
+  <rect width="880" height="240" fill="url(#howGlow)"/>
 
   <g font-family="ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace">
 
-    <!-- Step 1 -->
-    <g transform="translate(40, 56)">
-      <rect width="180" height="128" rx="10" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+    <g transform="translate(40, 56)" filter="url(#howShadow)">
+      <rect width="180" height="128" rx="12" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+      <rect width="180" height="128" rx="12" fill="url(#howFrame)"/>
       <text x="20" y="30" font-size="11" fill="#4db4dc" letter-spacing="2">01</text>
       <text x="20" y="58" font-size="15" font-weight="600" fill="#d6ecf6">scan</text>
       <text x="20" y="82" font-size="11" fill="#6f93a8">discover every MCP server</text>
@@ -24,13 +35,12 @@
       <text x="20" y="114" font-size="11" fill="#6f93a8">score each one.</text>
     </g>
 
-    <!-- arrow 1->2 -->
     <line x1="220" y1="120" x2="244" y2="120" stroke="#4db4dc" stroke-width="1.4"/>
     <polygon points="244,116 252,120 244,124" fill="#4db4dc"/>
 
-    <!-- Step 2 -->
-    <g transform="translate(258, 56)">
-      <rect width="180" height="128" rx="10" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+    <g transform="translate(258, 56)" filter="url(#howShadow)">
+      <rect width="180" height="128" rx="12" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+      <rect width="180" height="128" rx="12" fill="url(#howFrame)"/>
       <text x="20" y="30" font-size="11" fill="#4db4dc" letter-spacing="2">02</text>
       <text x="20" y="58" font-size="15" font-weight="600" fill="#d6ecf6">sandbox</text>
       <text x="20" y="82" font-size="11" fill="#6f93a8">lock the risky ones down</text>
@@ -41,9 +51,9 @@
     <line x1="438" y1="120" x2="462" y2="120" stroke="#4db4dc" stroke-width="1.4"/>
     <polygon points="462,116 470,120 462,124" fill="#4db4dc"/>
 
-    <!-- Step 3 -->
-    <g transform="translate(476, 56)">
-      <rect width="180" height="128" rx="10" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+    <g transform="translate(476, 56)" filter="url(#howShadow)">
+      <rect width="180" height="128" rx="12" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+      <rect width="180" height="128" rx="12" fill="url(#howFrame)"/>
       <text x="20" y="30" font-size="11" fill="#4db4dc" letter-spacing="2">03</text>
       <text x="20" y="58" font-size="15" font-weight="600" fill="#d6ecf6">gateway</text>
       <text x="20" y="82" font-size="11" fill="#6f93a8">every tool-call routes</text>
@@ -54,9 +64,9 @@
     <line x1="656" y1="120" x2="680" y2="120" stroke="#4db4dc" stroke-width="1.4"/>
     <polygon points="680,116 688,120 680,124" fill="#4db4dc"/>
 
-    <!-- Step 4 -->
-    <g transform="translate(694, 56)">
-      <rect width="146" height="128" rx="10" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+    <g transform="translate(694, 56)" filter="url(#howShadow)">
+      <rect width="146" height="128" rx="12" fill="#081826" stroke="rgba(77,180,220,0.32)"/>
+      <rect width="146" height="128" rx="12" fill="url(#howFrame)"/>
       <text x="20" y="30" font-size="11" fill="#4db4dc" letter-spacing="2">04</text>
       <text x="20" y="58" font-size="15" font-weight="600" fill="#d6ecf6">watch</text>
       <text x="20" y="82" font-size="11" fill="#6f93a8">dashboard + live</text>

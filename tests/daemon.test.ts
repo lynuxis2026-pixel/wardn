@@ -71,6 +71,41 @@ interface SandboxBody {
   policy: { enabled: boolean; filesystem: { paths: string[] }; network: boolean };
 }
 
+test("GET /api/badge.svg returns an SVG with the trust state", async (t) => {
+  const ctx = await startTestDaemon();
+  t.after(() => ctx.cleanup());
+
+  const res = await ctx.daemon.app.inject({ method: "GET", url: "/api/badge.svg" });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.headers["content-type"] as string, /image\/svg\+xml/);
+  assert.match(res.headers["cache-control"] as string, /no-cache/);
+  assert.equal(res.headers["x-content-type-options"], "nosniff");
+  assert.match(res.body, /^<svg/);
+  // Fixture has 1 risky (filesystem with "/"), so the badge must show that.
+  assert.match(res.body, /1 risky/);
+});
+
+test("GET /api/badge.svg accepts ?theme=light and ?show=trust", async (t) => {
+  const ctx = await startTestDaemon();
+  t.after(() => ctx.cleanup());
+
+  const res = await ctx.daemon.app.inject({ method: "GET", url: "/api/badge.svg?theme=light&show=trust" });
+  assert.equal(res.statusCode, 200);
+  assert.match(res.body, /#f4f8fb/, "light theme bg should be present");
+  // 'trust' mode omits the total.
+  assert.ok(!res.body.includes("2 · "), "trust mode should not show the total prefix");
+});
+
+test("GET /api/badge.svg falls back to defaults for invalid query params", async (t) => {
+  const ctx = await startTestDaemon();
+  t.after(() => ctx.cleanup());
+
+  const res = await ctx.daemon.app.inject({ method: "GET", url: "/api/badge.svg?theme=garbage&show=evil" });
+  assert.equal(res.statusCode, 200);
+  // Defaults: dark + summary
+  assert.match(res.body, /#000510/);
+});
+
 test("GET /api/status returns daemon health", async (t) => {
   const ctx = await startTestDaemon();
   t.after(() => ctx.cleanup());

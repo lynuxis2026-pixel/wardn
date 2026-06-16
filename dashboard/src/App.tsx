@@ -119,7 +119,11 @@ export function App() {
               ? `Disable sandbox for ${r.server.name}`
               : `Sandbox ${r.server.name}`;
             return (
-              <article key={cardKey} className={`card card--${r.level}`}>
+              <article
+                key={cardKey}
+                className={`card card--${r.level}`}
+                data-sandboxed={sandboxed ? "true" : undefined}
+              >
                 <header className="card-head">
                   <div className="card-head-id">
                     <span className={`badge badge--${r.level}`}>{BADGE_LABEL[r.level]}</span>

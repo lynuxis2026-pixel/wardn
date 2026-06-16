@@ -41,17 +41,38 @@ html, body, #root {
 }
 
 body {
-  background:
-    radial-gradient(ellipse at top, rgba(77, 180, 220, 0.08), transparent 60%),
-    radial-gradient(ellipse at bottom right, rgba(77, 180, 220, 0.04), transparent 50%),
-    var(--bg);
+  background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   letter-spacing: 0.005em;
+  position: relative;
+  overflow-x: hidden;
 }
+
+body::before, body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+body::before {
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(77, 180, 220, 0.14), transparent 65%),
+    radial-gradient(ellipse 50% 35% at 90% 80%, rgba(77, 180, 220, 0.05), transparent 70%);
+}
+body::after {
+  background-image: radial-gradient(rgba(127, 208, 238, 0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse at 50% 25%, black 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 25%, black 0%, transparent 70%);
+  opacity: 0.5;
+}
+
+.app { position: relative; z-index: 1; }
 
 /* ---------- layout ---------- */
 
@@ -150,6 +171,16 @@ body {
   padding: 18px 20px;
   position: relative;
   overflow: hidden;
+  transition: transform 240ms ease, border-color 240ms ease, background 240ms ease;
+}
+
+.stat::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(127, 208, 238, 0.08), transparent 22%);
+  border-radius: inherit;
 }
 
 .stat::after {
@@ -158,6 +189,19 @@ body {
   inset: 0 0 auto 0;
   height: 2px;
   background: transparent;
+}
+
+.stat--risky {
+  border-color: rgba(255, 107, 138, 0.4);
+  background: linear-gradient(180deg, rgba(255, 107, 138, 0.06), var(--bg-card) 60%);
+  animation: stat-pulse 2.6s ease-in-out infinite;
+}
+@keyframes stat-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 138, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 107, 138, 0.10); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stat--risky { animation: none; }
 }
 
 .stat--risky::after { background: var(--risky); }
@@ -223,14 +267,36 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 18px 20px;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition: border-color 200ms ease, background 200ms ease, transform 200ms ease;
   position: relative;
   min-width: 0;
+  overflow: hidden;
 }
-.card:hover { background: var(--bg-card-hover); border-color: var(--border-strong); }
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(127, 208, 238, 0.08), transparent 16%);
+  border-radius: inherit;
+}
+.card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
 .card--risky { border-left: 3px solid var(--risky); }
 .card--review { border-left: 3px solid var(--review); }
 .card--trusted { border-left: 3px solid var(--trusted); }
+.card > * { position: relative; z-index: 1; }
+
+/* Sandboxed cards get a soft cyan ring so the protected state reads stronger
+   than the plain trusted state. */
+.card[data-sandboxed="true"] {
+  box-shadow:
+    inset 0 0 0 1px rgba(127, 208, 238, 0.18),
+    0 0 24px -8px rgba(77, 180, 220, 0.18);
+}
 
 .card-head {
   display: flex;
@@ -404,8 +470,25 @@ body {
   padding: 6px 0;
   border-bottom: 1px solid rgba(77, 180, 220, 0.06);
   align-items: baseline;
+  animation: log-enter 380ms ease-out;
 }
 .log-row:last-child { border-bottom: 0; }
+@keyframes log-enter {
+  0% { opacity: 0; transform: translateX(8px); }
+  40% { opacity: 1; }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.log-row .log-ts {
+  animation: ts-flash 700ms ease-out;
+}
+@keyframes ts-flash {
+  0% { color: var(--cyan); text-shadow: 0 0 6px rgba(77, 180, 220, 0.55); }
+  60% { color: var(--cyan); text-shadow: none; }
+  100% { color: var(--fg-faint); text-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .log-row, .log-row .log-ts { animation: none; }
+}
 
 .log-ts { color: var(--fg-faint); font-size: 11px; }
 .log-dir {

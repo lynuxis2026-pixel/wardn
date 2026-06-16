@@ -14,6 +14,9 @@ tool-call through a local gateway, and lets you sandbox the dangerous ones.
 [![license](https://img.shields.io/badge/license-MIT-4db4dc.svg?labelColor=000510)](LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A518-4db4dc.svg?labelColor=000510)](package.json)
 
+> A live **`wardn shield`** is served by your local gateway — drop
+> `http://127.0.0.1:7331/api/badge.svg` into any README and your readers see your trust state.
+
 [Quickstart](#quickstart) · [How it works](#how-it-works) · [Trust signals](#trust-signals) · [Commands](#commands) · [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md)
 
 </div>
@@ -203,6 +206,28 @@ server`, `~ X went from RISKY to TRUSTED`, `- Y removed`. `wardn registry update
 override at `~/.wardn/trust-registry.json` that the scanner prefers over the bundled data.
 
 ---
+
+## Shield badge
+
+The gateway exposes a deterministic SVG badge at `/api/badge.svg`. Same input → same bytes, so it
+caches cleanly. Two query params, both whitelisted enums:
+
+```text
+GET /api/badge.svg                       # default: dark, summary
+GET /api/badge.svg?theme=light           # for light READMEs
+GET /api/badge.svg?show=trust            # drops the total, shows just the trust label
+```
+
+Render examples:
+
+| State | Looks like |
+|---|---|
+| `summary 5 servers, 1 risky` | `⛨ wardn · 5 · 1 risky` (right segment red) |
+| `summary 5 servers, 0 risky` | `⛨ wardn · 5 · trusted` (right segment green) |
+| `trust 5 review` | `⛨ wardn · 5 review` (right segment amber) |
+
+The badge is a read endpoint — no auth needed, but it never reveals server names, paths, or env vars,
+only the aggregate trust counts.
 
 ## Trust registry — the community layer
 
