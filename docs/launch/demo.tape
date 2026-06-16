@@ -30,7 +30,7 @@ Enter
 Show
 
 # the actual demo
-Type "npx wardn demo --fast"
+Type "npx -y @ludicolijn/wardn demo --fast"
 Sleep 400ms
 Enter
 

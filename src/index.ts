@@ -94,7 +94,7 @@ rewrite
   .command("apply")
   .description("Rewrite each discovered MCP server to call wardn gateway run <name>")
   .option("--client <name>", "limit to a specific client (claude-desktop / cursor / vscode)")
-  .option("--invoke <template>", `command template; {name} is substituted (default: "${"npx -y wardn gateway run {name}"}")`)
+  .option("--invoke <template>", `command template; {name} is substituted (default: "${"npx -y @ludicolijn/wardn gateway run {name}"}")`)
   .option("--from <dir>", "rewrite JSON configs in <dir> instead of the standard locations")
   .option("--dry-run", "preview what would change without touching any file")
   .action((opts: { client?: string; invoke?: string; from?: string; dryRun?: boolean }) => {

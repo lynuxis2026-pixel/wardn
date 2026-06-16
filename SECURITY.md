@@ -8,7 +8,7 @@ Please email **security@lynuxis.nl** with:
 
 - a description of the issue and the impact you observed
 - reproduction steps (a minimal MCP server config + the wardn command that exposes it is ideal)
-- the wardn version (`npx wardn --version`), Node version, and OS
+- the wardn version (`wardn --version`), Node version, and OS
 
 We aim to acknowledge within 72 hours and to ship a fix or mitigation within
 14 days for high-severity issues. We will credit you in the release notes
@@ -46,7 +46,7 @@ than just a feature request. That gap **is** the bug.
 
 ## Operating wardn safely
 
-- Keep `npx wardn scan` in CI to alert when a config grows a risky server.
+- Keep `wardn scan` in CI to alert when a config grows a risky server.
 - Sandbox the filesystem server (`wardn sandbox enable filesystem --path ...`)
   before the first run on a new machine.
 - Use `wardn rewrite apply` so every client routes through the gateway, then

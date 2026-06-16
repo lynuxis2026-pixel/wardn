@@ -3,7 +3,7 @@ import path from "node:path";
 import os from "node:os";
 import { knownClientLocations } from "../discovery/clients.js";
 
-export const DEFAULT_INVOKE_TEMPLATE = "npx -y wardn gateway run {name}";
+export const DEFAULT_INVOKE_TEMPLATE = "npx -y @ludicolijn/wardn gateway run {name}";
 
 interface RewriteIndexEntry {
   client: string;

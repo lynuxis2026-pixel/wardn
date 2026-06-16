@@ -174,7 +174,7 @@ export function App() {
             <div className="empty">
               <p className="empty-title">no MCP servers found</p>
               <p>Start the daemon against the bundled fixtures to see what wardn does:</p>
-              <code className="empty-cmd">npx wardn gateway start --from fixtures</code>
+              <code className="empty-cmd">npx -y @ludicolijn/wardn gateway start --from fixtures</code>
             </div>
           )}
         </section>

@@ -22,19 +22,26 @@ The third one frames it as a story and tends to outperform pure product pitches 
 Hi HN — I built wardn after I noticed my Claude Desktop config had given an
 MCP server read/write access to my entire disk for months.
 
-`npx wardn scan` discovers every MCP server in Claude Desktop / Cursor / VS
-Code, scores each with explainable signals (broad-fs, shell-exec, unpinned
-package, remote transport, holds-secrets), exits non-zero if anything risky
-is found.
+  npx -y @ludicolijn/wardn scan
 
-`npx wardn sandbox enable filesystem --path ~/safe` locks a server to one
-directory with no network. `npx wardn gateway start` puts a byte-faithful
-proxy between any MCP client and any stdio server and rejects out-of-policy
+discovers every MCP server in Claude Desktop / Cursor / VS Code, scores each
+with explainable signals (broad-fs, shell-exec, unpinned package, remote
+transport, holds-secrets), exits non-zero if anything risky is found.
+
+  npm i -g @ludicolijn/wardn
+
+then `wardn sandbox enable filesystem --path ~/safe` locks a server to one
+directory with no network. `wardn gateway start` puts a byte-faithful proxy
+between any MCP client and any stdio server and rejects out-of-policy
 tool-calls before they reach the server.
 
-The reproducible proof: `npx wardn demo` spawns a deliberately malicious MCP
+The reproducible proof: `wardn demo` spawns a deliberately malicious MCP
 server I bundled and shows the sandbox blocking 4/4 attack vectors before
 they touch the server process. The demo is the test — anyone can run it.
+
+(npm rejected the unscoped name `wardn` as too similar to `yarn` so the
+package lives under `@ludicolijn/wardn`. The CLI binary is still `wardn`
+after install.)
 
 MIT, local-first, no telemetry. Honest threat model in SECURITY.md.
 

@@ -17,13 +17,15 @@ project gains traction. GitHub Pages serves the landing for free.
 
 ## T-1 day — setup
 
-- [ ] **`npm publish`** — log in (`npm login`), confirm `npm whoami`, then `npm publish`. 2FA prompt if enabled.
-- [ ] **`npm view wardn`** — confirm the package is live and the tarball is sane.
+- [ ] **`npm publish`** — log in (`npm login`), confirm `npm whoami`, then `npm publish`. Scoped public packages need `publishConfig.access = public` in package.json (already set). 2FA prompts for OTP if enabled.
+- [ ] **`npm view @ludicolijn/wardn`** — confirm the package is live and the tarball is sane.
+
+> The package ships as `@ludicolijn/wardn` (npm wouldn't accept the unscoped name `wardn` — too similar to `yarn`). The CLI binary is `wardn` after install — see the README "Install once, type short" callout.
 - [ ] **GitHub release** — `gh release create v0.1.0 --generate-notes --title "v0.1.0 — first launch"`.
 - [ ] **GitHub Pages** — Settings → Pages → source `main` / folder `/landing`. Live at `lynuxis2026-pixel.github.io/wardn/` after ~1 min. See [github-pages.md](github-pages.md).
 - [ ] **Repo meta** — set description on GitHub. Topics: `mcp` `model-context-protocol` `ai-security` `claude` `cursor` `local-first` `mit`.
 - [ ] **Social preview image** — export `assets/wardn-attack-demo.svg` to PNG 1280×640, upload via Settings → General → Social preview.
-- [ ] **Fresh-install smoke** — on a different machine / VM / friend's laptop, run `npx wardn scan`. If it breaks, you're not launch-ready.
+- [ ] **Fresh-install smoke** — on a different machine / VM / friend's laptop, run `npx -y @ludicolijn/wardn scan`. If it breaks, you're not launch-ready.
 - [ ] **Read [show-hn.md](show-hn.md) aloud once.** If anything in the body sounds salesy, cut it.
 
 ## Launch day — order matters

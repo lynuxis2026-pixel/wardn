@@ -21,9 +21,9 @@ body:
       label: Reproduction
       description: Exact commands. Fixture configs are great; redacted real configs work too.
       placeholder: |
-        npx wardn scan --from fixtures
-        npx wardn sandbox enable filesystem --path /tmp
-        npx wardn gateway run filesystem
+        wardnscan --from fixtures
+        wardnsandbox enable filesystem --path /tmp
+        wardngateway run filesystem
       render: bash
     validations:
       required: true

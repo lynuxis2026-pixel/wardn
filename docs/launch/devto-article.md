@@ -22,7 +22,7 @@ I built a malicious MCP server to test my own security tool
 ## Article
 
 ```markdown
-> _Demo first: [`npx wardn demo`](https://github.com/lynuxis2026-pixel/wardn#5-prove-it-works) — runs a deliberately malicious MCP server through the gateway under a tight sandbox and shows every attack getting blocked before the server is reached._
+> _Demo first: [`wardn demo`](https://github.com/lynuxis2026-pixel/wardn#5-prove-it-works) — runs a deliberately malicious MCP server through the gateway under a tight sandbox and shows every attack getting blocked before the server is reached._
 
 A few weeks ago I noticed something unsettling.
 
@@ -37,8 +37,13 @@ So I built one. It's called **`wardn`**.
 ## The 30-second pitch
 
 ```bash
-npx wardn scan
+npx -y @ludicolijn/wardn scan
+# or, after `npm i -g @ludicolijn/wardn`:
+wardn scan
 ```
+
+(Heads up: npm wouldn't let me publish the unscoped name — too close to `yarn`. So the package
+lives under `@ludicolijn/wardn`. The CLI binary is still `wardn` once installed.)
 
 Reads your Claude Desktop / Cursor / VS Code configs, lists every MCP server, scores each with explainable signals:
 
@@ -54,7 +59,7 @@ Exits non-zero if anything risky is found. Drop it into CI and you have a regres
 Then you sandbox:
 
 ```bash
-npx wardn sandbox enable filesystem --path ~/safe-workspace
+wardn sandbox enable filesystem --path ~/safe-workspace
 ```
 
 The filesystem server can now only see one directory. No network. Filtered env. Re-scan shows it as `TRUSTED ⛨ sandboxed`.
@@ -62,7 +67,7 @@ The filesystem server can now only see one directory. No network. Filtered env. 
 Then you start the gateway:
 
 ```bash
-npx wardn gateway start
+wardn gateway start
 ```
 
 A local Fastify daemon binds to `127.0.0.1:7331`. Every `tools/call` from any MCP client now flows through wardn. The gateway forwards bytes verbatim (the wire stays identical) but vets each call. Out-of-policy = blocked before the server even sees the request.
@@ -80,7 +85,7 @@ nuke         — recursively deletes a directory
 shell_exec   — runs an arbitrary shell command
 ```
 
-`npx wardn demo` spawns evil-mcp behind the gateway under a tight sandbox, then fires the four attack vectors one by one. The output:
+`wardn demo` spawns evil-mcp behind the gateway under a tight sandbox, then fires the four attack vectors one by one. The output:
 
 ```text
 → attacker calls read_secret (read ~/.ssh/id_rsa)
@@ -130,8 +135,8 @@ The hard part of this is community-curation, not code. Every PR to the registry 
 ## Try it
 
 ```bash
-npx wardn scan          # see what's running
-npx wardn demo          # see what wardn catches
+wardn scan          # see what's running
+wardn demo          # see what wardn catches
 ```
 
 Repo: https://github.com/lynuxis2026-pixel/wardn

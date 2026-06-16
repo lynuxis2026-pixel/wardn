@@ -16,7 +16,7 @@ section closest to "tooling" / "security" — if none exists, propose a new
 section ("Security & sandboxing").
 
 ```markdown
-- [wardn](https://github.com/lynuxis2026-pixel/wardn) — Local-first MCP control plane. Discovers every MCP server in your clients, scores it for risk, sandboxes the dangerous ones, and watches every JSON-RPC tool-call live. One command, no telemetry, MIT. [![wardn](https://img.shields.io/badge/⛨-wardn-4db4dc?labelColor=000510)](https://github.com/lynuxis2026-pixel/wardn)
+- [wardn](https://github.com/lynuxis2026-pixel/wardn) — Local-first MCP control plane. Discovers every MCP server in your clients, scores it for risk, sandboxes the dangerous ones, and watches every JSON-RPC tool-call live. `npx -y @ludicolijn/wardn scan` — no telemetry, MIT. [![wardn](https://img.shields.io/badge/⛨-wardn-4db4dc?labelColor=000510)](https://github.com/lynuxis2026-pixel/wardn)
 ```
 
 ## PR body
@@ -26,13 +26,23 @@ section ("Security & sandboxing").
 
 `wardn` is a local-first MCP control plane I shipped this week.
 
+**Install**
+
+```bash
+npx -y @ludicolijn/wardn scan        # try without installing
+npm i -g @ludicolijn/wardn           # then just: wardn scan
+```
+
+The package lives under `@ludicolijn/wardn` because npm rejected the unscoped
+`wardn` as too similar to `yarn`. The CLI binary is `wardn` after install.
+
 **What it does**
 
-- `npx wardn scan` — discovers MCP servers from Claude Desktop / Cursor / VS Code configs and scores each with explainable signals (broad filesystem, shell launcher, unpinned package, remote transport, credentials in env).
-- `npx wardn sandbox enable <name>` — per-server policy file (filesystem whitelist, network on/off, env-whitelist).
-- `npx wardn gateway start` — byte-faithful stdio proxy + Fastify daemon. Rejects out-of-policy `tools/call` before the server sees it.
-- `npx wardn rewrite apply` — routes existing client configs through wardn with byte-identical backups.
-- `npx wardn demo` — bundled malicious MCP server proving the sandbox blocks 4/4 attack vectors.
+- `wardn scan` — discovers MCP servers from Claude Desktop / Cursor / VS Code configs and scores each with explainable signals (broad filesystem, shell launcher, unpinned package, remote transport, credentials in env).
+- `wardn sandbox enable <name>` — per-server policy file (filesystem whitelist, network on/off, env-whitelist).
+- `wardn gateway start` — byte-faithful stdio proxy + Fastify daemon. Rejects out-of-policy `tools/call` before the server sees it.
+- `wardn rewrite apply` — routes existing client configs through wardn with byte-identical backups.
+- `wardn demo` — bundled malicious MCP server proving the sandbox blocks 4/4 attack vectors.
 
 **Honest scope**
 
@@ -52,7 +62,7 @@ Thanks for maintaining the list.
 
 ## Pre-submit checklist
 
-- [ ] `wardn` is published on npm (so the install link works)
+- [ ] `@ludicolijn/wardn` is published on npm (so the install link works)
 - [ ] Repo description is filled in on GitHub
 - [ ] At least one release tag exists (v0.1.0)
 - [ ] README is up-to-date with current commands

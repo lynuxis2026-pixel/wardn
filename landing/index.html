@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#000510" />
   <meta name="description" content="wardn is a local-first MCP control plane. One command discovers every MCP server your AI clients use, scores it for risk, and sandboxes the dangerous ones." />
   <meta property="og:title" content="wardn — see and stop the risky code your AI agents run" />
-  <meta property="og:description" content="Local-first MCP control plane. One command: npx wardn scan." />
+  <meta property="og:description" content="Local-first MCP control plane. One command: npx -y @ludicolijn/wardn scan." />
   <meta property="og:image" content="https://raw.githubusercontent.com/lynuxis2026-pixel/wardn/main/assets/wardn-attack-demo.svg" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='20' font-size='22' fill='%234db4dc'%3E%E2%9B%A8%3C/text%3E%3C/svg%3E" />
@@ -571,12 +571,15 @@
       <div class="hero-actions">
         <div class="install" role="group" aria-label="install command">
           <span class="prompt">$</span>
-          <code id="install-cmd">npx wardn scan</code>
+          <code id="install-cmd">npx -y @ludicolijn/wardn scan</code>
           <button type="button" id="copy-btn" aria-label="copy install command">copy</button>
         </div>
         <a class="cta cta-primary" href="https://github.com/lynuxis2026-pixel/wardn">Star on GitHub</a>
         <a class="cta cta-secondary" href="#quickstart">Quickstart ↓</a>
       </div>
+      <p style="font-family: var(--font-mono); font-size: 11px; color: var(--fg-faint); margin: 4px 0 0; letter-spacing: 0.04em;">
+        Or <code style="background: rgba(77,180,220,0.08); color: var(--cyan-soft); padding: 2px 6px; border-radius: 4px;">npm i -g @ludicolijn/wardn</code> once, then just type <code style="background: rgba(77,180,220,0.08); color: var(--cyan-soft); padding: 2px 6px; border-radius: 4px;">wardn scan</code>.
+      </p>
 
       <div class="terminal" role="region" aria-label="wardn demo terminal">
         <div class="terminal-chrome">
@@ -657,11 +660,11 @@
     <section class="quickstart" aria-label="quickstart" id="quickstart">
       <h2 class="section-title">Quickstart</h2>
       <ol>
-        <li><div><code>npx wardn scan</code><p>Lists every MCP server in your installed clients and scores each one. Exits non-zero if anything risky is found — drop it into CI.</p></div></li>
-        <li><div><code>npx wardn sandbox enable filesystem --path ~/safe</code><p>Locks the filesystem server to a single directory. Network off by default. Re-scan now shows <b>TRUSTED ⛨ sandboxed</b>.</p></div></li>
-        <li><div><code>npx wardn gateway start</code><p>Starts the local daemon. Dashboard at <code>127.0.0.1:7331</code>, SSE log at <code>/api/events</code>.</p></div></li>
-        <li><div><code>npx wardn rewrite apply</code><p>Routes existing client configs through the gateway. Restart the client and every tool-call now flows through wardn.</p></div></li>
-        <li><div><code>npx wardn demo</code><p>Spawns the bundled evil-MCP and proves the sandbox blocks four real-world attack vectors before they reach the server.</p></div></li>
+        <li><div><code>wardn scan</code><p>Lists every MCP server in your installed clients and scores each one. Exits non-zero if anything risky is found — drop it into CI.</p></div></li>
+        <li><div><code>wardn sandbox enable filesystem --path ~/safe</code><p>Locks the filesystem server to a single directory. Network off by default. Re-scan now shows <b>TRUSTED ⛨ sandboxed</b>.</p></div></li>
+        <li><div><code>wardn gateway start</code><p>Starts the local daemon. Dashboard at <code>127.0.0.1:7331</code>, SSE log at <code>/api/events</code>.</p></div></li>
+        <li><div><code>wardn rewrite apply</code><p>Routes existing client configs through the gateway. Restart the client and every tool-call now flows through wardn.</p></div></li>
+        <li><div><code>wardn demo</code><p>Spawns the bundled evil-MCP and proves the sandbox blocks four real-world attack vectors before they reach the server.</p></div></li>
       </ol>
     </section>
 

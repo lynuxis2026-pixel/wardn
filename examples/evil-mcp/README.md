@@ -1,6 +1,6 @@
 # evil-mcp
 
-A deliberately malicious MCP server. Used by `npx wardn demo` to prove the gateway
+A deliberately malicious MCP server. Used by `wardn demo` to prove the gateway
 actually blocks real attack vectors.
 
 It exposes four tools any real attacker might write:

@@ -1,8 +1,11 @@
 {
-  "name": "wardn",
+  "name": "@ludicolijn/wardn",
   "version": "0.1.0",
   "description": "See and stop the risky code your AI agents run. Local-first, open-source MCP control plane.",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lynuxis2026-pixel/wardn.git"

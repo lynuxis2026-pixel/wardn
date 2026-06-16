@@ -15,13 +15,13 @@ Native video / GIF in tweet 1 boosts impressions significantly more than a link.
 >
 > Here's a deliberately-malicious MCP server trying four attack vectors and the sandbox blocking all four 👇
 >
-> [GIF: demo.gif — 6 seconds, `npx wardn demo` showing 4/4 blocked]
+> [GIF: demo.gif — 6 seconds, `wardn demo` showing 4/4 blocked]
 
 ## Tweet 2 (the install + GitHub link)
 
 > One command, no setup:
 >
-> npx wardn scan
+> npx -y @ludicolijn/wardn scan
 >
 > Discovers every MCP server in Claude Desktop / Cursor / VS Code, scores each with explainable signals, exits non-zero if anything risky is found.
 >

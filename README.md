@@ -8,7 +8,7 @@ A local-first MCP control plane for developers using Claude Desktop, Cursor, VS 
 custom agents. One command discovers every MCP server you have, scores it for risk, routes every
 tool-call through a local gateway, and lets you sandbox the dangerous ones.
 
-[![npm version](https://img.shields.io/npm/v/wardn.svg?color=4db4dc&labelColor=000510)](https://www.npmjs.com/package/wardn)
+[![npm version](https://img.shields.io/npm/v/@ludicolijn/wardn.svg?color=4db4dc&labelColor=000510)](https://www.npmjs.com/package/@ludicolijn/wardn)
 [![CI](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml/badge.svg)](https://github.com/lynuxis2026-pixel/wardn/actions/workflows/ci.yml)
 [![coverage](https://img.shields.io/badge/coverage-100%25%20lines-7be0a4.svg?labelColor=000510)](#tested)
 [![license](https://img.shields.io/badge/license-MIT-4db4dc.svg?labelColor=000510)](LICENSE)
@@ -25,7 +25,22 @@ tool-call through a local gateway, and lets you sandbox the dangerous ones.
 
 ![wardn demo — evil-mcp blocked four times](assets/wardn-attack-demo.svg)
 
-> _`npx wardn demo` runs a bundled malicious MCP server through the gateway and blocks every attack before the server sees the call. The demo is reproducible — see [examples/evil-mcp](examples/evil-mcp/)._
+> _`wardn demo` runs a bundled malicious MCP server through the gateway and blocks every attack before the server sees the call. The demo is reproducible — see [examples/evil-mcp](examples/evil-mcp/)._
+
+> **Install once, type short** — the package is published as `@ludicolijn/wardn`, but the binary it
+> installs is just `wardn`. Two options:
+>
+> ```bash
+> # one-off, no install:
+> npx -y @ludicolijn/wardn scan
+>
+> # install once, then type `wardn` forever:
+> npm i -g @ludicolijn/wardn
+> wardn scan
+> ```
+>
+> All examples below use the short `wardn` form for readability — prefix with `npx -y @ludicolijn/`
+> if you haven't done the global install.
 
 ---
 
@@ -38,7 +53,7 @@ in the wild and no easy way to see what's actually running, what it can touch, o
 `wardn` is the local, developer-first answer. No cloud account. No telemetry. No enterprise console.
 
 ```bash
-npx wardn scan
+npx -y @ludicolijn/wardn scan
 ```
 
 ```text
@@ -70,12 +85,12 @@ Four small commands and the work is done.
 
 | | Command | What happens |
 |---|---|---|
-| **01** | `npx wardn scan` | Reads Claude Desktop / Cursor / VS Code MCP configs and scores every server with explainable signals. |
-| **02** | `npx wardn sandbox enable <name>` | Writes a per-server policy: filesystem whitelist, network on/off, env-whitelist. Stored at `~/.wardn/policy.json`. |
-| **03** | `npx wardn gateway start` | Local Fastify daemon + stdio proxy. Every `tools/call` is vetted before the MCP server sees it. |
+| **01** | `wardn scan` | Reads Claude Desktop / Cursor / VS Code MCP configs and scores every server with explainable signals. |
+| **02** | `wardn sandbox enable <name>` | Writes a per-server policy: filesystem whitelist, network on/off, env-whitelist. Stored at `~/.wardn/policy.json`. |
+| **03** | `wardn gateway start` | Local Fastify daemon + stdio proxy. Every `tools/call` is vetted before the MCP server sees it. |
 | **04** | open the dashboard | Lynuxis-styled console at `http://127.0.0.1:7331`, with live tool-call log over SSE. |
 
-Optional fifth step: `npx wardn rewrite apply` rewrites your client configs so every server you've
+Optional fifth step: `wardn rewrite apply` rewrites your client configs so every server you've
 ever installed routes through the gateway from now on. Backed up byte-for-byte; one command undoes it.
 
 ---
@@ -123,7 +138,7 @@ Every flag has a one-line `reason`. No black box.
 ### 1. Scan
 
 ```bash
-npx wardn scan
+wardn scan
 ```
 
 Reads the config of every MCP-capable client installed locally; scores each server.
@@ -131,7 +146,7 @@ Reads the config of every MCP-capable client installed locally; scores each serv
 ### 2. Sandbox the risky one
 
 ```bash
-npx wardn sandbox enable filesystem --path ~/safe-workspace
+wardn sandbox enable filesystem --path ~/safe-workspace
 ```
 
 ```text
@@ -155,7 +170,7 @@ Re-scan:
 ### 3. Start the gateway + dashboard
 
 ```bash
-npx wardn gateway start
+wardn gateway start
 ```
 
 ```text
@@ -175,9 +190,9 @@ JSON-RPC tool-calls. One click sandboxes a server.
 ### 4. Route existing clients through wardn
 
 ```bash
-npx wardn rewrite apply       # rewrites Claude Desktop / Cursor / VS Code configs (with backup)
-npx wardn rewrite restore     # undo, byte-for-byte
-npx wardn rewrite status      # see what's active
+wardn rewrite apply       # rewrites Claude Desktop / Cursor / VS Code configs (with backup)
+wardn rewrite restore     # undo, byte-for-byte
+wardn rewrite status      # see what's active
 ```
 
 Restart your client; every MCP tool-call now flows through the local gateway.
@@ -185,7 +200,7 @@ Restart your client; every MCP tool-call now flows through the local gateway.
 ### 5. Prove it works
 
 ```bash
-npx wardn demo
+wardn demo
 ```
 
 Spawns the bundled [evil-mcp](examples/evil-mcp/) through the gateway under a tight sandbox, fires
@@ -195,10 +210,10 @@ each one rejected before the server is reached.
 ### 6. Keep it healthy
 
 ```bash
-npx wardn doctor                                 # diagnose the local setup
-npx wardn watch --once                           # CI mode: exits non-zero on a new risky finding
-npx wardn report --stdout > trust.md             # markdown trust report for stakeholders
-npx wardn registry update                        # pull the latest curated trust data
+wardn doctor                                 # diagnose the local setup
+wardn watch --once                           # CI mode: exits non-zero on a new risky finding
+wardn report --stdout > trust.md             # markdown trust report for stakeholders
+wardn registry update                        # pull the latest curated trust data
 ```
 
 `wardn watch` keeps a snapshot at `~/.wardn/scan-snapshot.json` so it can show diffs — `+ new risky
